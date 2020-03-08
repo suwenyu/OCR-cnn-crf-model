@@ -52,11 +52,17 @@ def get_dataset():
     # Flatten images into vectors.
     dataset.data = dataset.data.reshape(dataset.data.shape[:2] + (-1,))
 
-     # One-hot encode targets.
-    target = np.zeros(dataset.target.shape + (26,))
+
+    target = np.zeros(dataset.target.shape)
     for index, letter in np.ndenumerate(dataset.target):
         if letter:
-            target[index][ord(letter) - ord('a')] = 1
+            target[index] = ord(letter) - ord('a')
+
+    # One-hot encode targets.
+    # target = np.zeros(dataset.target.shape + (26,))
+    # for index, letter in np.ndenumerate(dataset.target):
+    #     if letter:
+    #         target[index][ord(letter) - ord('a')] = 1
     dataset.target = target
 
     # Shuffle order of examples.
