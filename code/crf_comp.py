@@ -83,13 +83,13 @@ class crf:
 
     def compute_z(self, alpha):
         # equation (14)
-        tmp = np.add(np.matmul(self.W, self.X[-1]), alpha[-1])
-        M = np.max(tmp)
-        log_z = M + math.log(np.sum(np.exp(np.add(tmp, -1*M))))
-        # print(np.exp(log_z))
+        # tmp = np.add(np.matmul(self.W, self.X[-1]), alpha[-1])
+        # M = np.max(tmp)
+        # log_z = M + math.log(np.sum(np.exp(np.add(tmp, -1*M))))
+        # # print(np.exp(log_z))
 
-        return np.exp(log_z)
-        # return np.sum(np.exp(alpha[-1] + np.dot(self.X, self.W.T)[-1]))
+        # return np.exp(log_z)
+        return np.sum(np.exp(alpha[-1] + np.dot(self.X, self.W.T)[-1]))
 
     # checked
     def compute_log_prob(self):

@@ -2,7 +2,9 @@ import numpy as np
 import utils, compute
 
 
-def max_sum(X, W, T):
+def max_sum(X, params):
+    W = utils.extract_w(params)
+    T = utils.extract_t(params)
     
     letter_size = 26
     seq_len = X.shape[0]

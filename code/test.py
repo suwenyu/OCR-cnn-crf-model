@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+from torch.autograd.gradcheck import gradcheck
 from torch.autograd import Function
 from data_loader import get_dataset
 
@@ -11,20 +12,22 @@ from data_loader import get_dataset
 import numpy as np
 from crf import CRF
 
-import check_grad
+import check_grad, train_crf, max_sum_solution
 import conv
 
-batch_size = 10
 
-
-class BadFFTFunction(Function):
+class CRFGradFunction(Function):
     @staticmethod
     def forward(ctx, input_x, input_y, params):
         numpy_input_x, numpy_params = input_x.detach().numpy(), params.detach().numpy()
         numpy_input_y = input_y.detach().numpy()
         # print(numpy_input)
         data = [(i, j) for i, j in zip(numpy_input_y, numpy_input_x)]
-        result = -1 * check_grad.compute_log_p_avg(numpy_params, data, len(data))
+
+        n = len(data)
+        result = -1 * train_crf.func(numpy_params, data, 1000)
+
+        # result = -1 * check_grad.compute_log_p_avg(numpy_params, data, len(data))
         # print(result)
         # print(numpy_input)
         ctx.save_for_backward(input_x, input_y, params)
@@ -33,15 +36,16 @@ class BadFFTFunction(Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        print('test')
         grad_output = grad_output.detach()
         input_x, input_y, params = ctx.saved_tensors
 
         numpy_params = params.detach().numpy()
         numpy_input_x, numpy_input_y = input_x.detach().numpy(), input_y.detach().numpy()
         data = [(i, j) for i, j in zip(numpy_input_y, numpy_input_x)]
+        
+        result = train_crf.func_prime(numpy_params, data, 1000)
         # print(data)
-        result = check_grad.gradient_avg(numpy_params, data, len(data))
+        # result = check_grad.gradient_avg(numpy_params, data, len(data))
         # print(result.shape)
         # numpy_go = grad_output.numpy()
 
@@ -92,12 +96,18 @@ class CRF(nn.Module):
         return self.cnn.forward(x)
 
     def loss(self, input_x, input_y):
-        feat_x = self.get_conv_feats(input_x)
-        return BadFFTFunction.apply(feat_x, input_y, self.params)
+        # feat_x = self.get_conv_feats(input_x)
+        return CRFGradFunction.apply(input_x, input_y, self.params)
 
-# def incorrect_fft(input):
-#     return BadFFTFunction.apply(input)
-
+    def forward(self, input_x):
+        numpy_input_x, numpy_params = input_x.detach().numpy(), self.params.detach().numpy()
+        
+        result = []
+        for x in numpy_input_x:
+            result.append(max_sum_solution.max_sum(x, numpy_params))
+        result = np.array(result)
+        
+        return torch.from_numpy(result)
 
 # Tunable parameters
 batch_size = 256
@@ -123,8 +133,13 @@ dataset = get_dataset()
 
 split = int(0.5 * len(dataset.data))
 
-train_data, train_target = dataset.data[:split], dataset.target[:split]
+# train_data, train_target = dataset.data[:split], dataset.target[:split]
+train_data, test_data = dataset.data[:split], dataset.data[split:]
+train_target, test_target = dataset.target[:split], dataset.target[split:]
+
+
 train = data_utils.TensorDataset(torch.tensor(train_data).float(), torch.tensor(train_target).long())
+test = data_utils.TensorDataset(torch.tensor(test_data).float(), torch.tensor(test_target).long())
 
 train_loader = data_utils.DataLoader(train,  # dataset to load from
                                      batch_size=batch_size,  # examples per batch (default: 1)
@@ -133,6 +148,16 @@ train_loader = data_utils.DataLoader(train,  # dataset to load from
                                      num_workers=5,  # subprocesses to use for sampling
                                      pin_memory=False,  # whether to return an item pinned to GPU
                                      )
+test_loader = data_utils.DataLoader(test,  # dataset to load from
+                                    batch_size=batch_size,  # examples per batch (default: 1)
+                                    shuffle=False,
+                                    sampler=None,  # if a sampling method is specified, `shuffle` must be False
+                                    num_workers=5,  # subprocesses to use for sampling
+                                    pin_memory=False,  # whether to return an item pinned to GPU
+                                    )
+print('Loaded dataset... ')
+
+step = 0
 
 for i_batch, sample in enumerate(train_loader):
     train_X = sample[0]
@@ -140,10 +165,11 @@ for i_batch, sample in enumerate(train_loader):
 
     # data = [(i , j) for i , j in zip(train_Y, train_X.detach().numpy())]
 
+
     # print(output)
 
     # res = output.backward()
-    # def closure():
+
     def closure():
         opt.zero_grad()
         loss = crf.loss(train_X, train_Y)
@@ -153,18 +179,34 @@ for i_batch, sample in enumerate(train_loader):
 
     opt.step(closure)
 
-
     # opt.zero_grad()
     # loss = crf.loss(train_X, train_Y)
-    
+
     # print('loss:', loss)
     # loss.backward()
     #     # return loss
     # opt.step()
 
     # opt.step(closure)
-    # from torch.autograd.gradcheck import gradcheck
+
     # test = gradcheck(crf, (train_X, train_Y), eps=1e-6, atol=1e-4)
     # print("Are the gradients correct: ", test)
     # print(res)
     # break
+    # print to stdout occasionally:
+    if step % print_iter == 0:
+        random_ixs = np.random.choice(test_data.shape[0], batch_size, replace=False)
+        test_X = test_data[random_ixs, :]
+        test_Y = test_target[random_ixs, :]
+
+        # Convert to torch
+        test_X = torch.from_numpy(test_X).float()
+        test_Y = torch.from_numpy(test_Y).long()
+
+
+        test_loss = crf.loss(test_X, test_Y)
+        pred = crf.forward(test_X)
+        word_acc, letter_acc = train_crf.word_letter_accuracy(pred, test_Y)
+        print("Letter Accuracy: %f, Word Accuracy: %f" % (letter_acc, word_acc) )
+        print(step, test_loss.data, test_loss.data / batch_size)
+    step += 1
