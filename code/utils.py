@@ -93,18 +93,38 @@ def load_model_params(filename):
 
 
 def extract_w(params):
-    return (params[:26*128]).reshape(26, 128)
+    w = np.zeros((27, 128))
+
+    for i in range(1, 27):
+        w[i] = params[128 * i: 128 * (i + 1)]
+
+    return w
+
+    # original
+    # return (np.rand(128,) + params[:26*128]).reshape(27, 128)
 
 
 def extract_t(params):
+    t_ij = np.zeros((27, 27))
 
-    t = np.array(params[26*128:]).reshape(26, 26)
-    # print(t[25][25])
-    # print(params[26*128:].shape)
-    # for i in t:
-    #     print(np.sum(i))
-    t = np.swapaxes(t, 0, 1)
-    return t
+    index = 0
+    for i in range(1, 27):
+        for j in range(1, 27):
+            t_ij[j][i] = params[128 * 26 + index]
+            index += 1
+    # print(t_ij[25][25])
+
+    return t_ij
+
+    # original
+    # t = np.array(params[26*128:]).reshape(26, 26)
+    # # print(t[25][25])
+    # # print(params[26*128:].shape)
+    # # for i in t:
+    # #     print(np.sum(i))
+    # t = np.swapaxes(t, 0, 1)
+
+    # return t
 
 # def extract_w(params):
 #     return params[:26*128].view(26, 128)

@@ -109,7 +109,7 @@ def word_letter_accuracy(y_preds, y_label):
         #count correct letter
         for i in range(len(pred)):
             letter_count+=1
-            if(pred[i]==label[i]):
+            if(pred[i]==label[i] and pred[i] != 0):
                 correct_letter+=1
                     
 

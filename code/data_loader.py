@@ -56,7 +56,7 @@ def get_dataset():
     target = np.zeros(dataset.target.shape)
     for index, letter in np.ndenumerate(dataset.target):
         if letter:
-            target[index] = ord(letter) - ord('a')
+            target[index] = ord(letter) - ord('a') + 1
 
     # One-hot encode targets.
     # target = np.zeros(dataset.target.shape + (26,))

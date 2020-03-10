@@ -4,9 +4,9 @@ import data_loader as dload
 import convolution_2d as custom2d
 import torch.nn.functional as F
 
-import os
-os.system('clear')
-os.chdir('/Users/jonathantso/Desktop/Code/uic_git/cs512/hw2/code')
+# import os
+# os.system('clear')
+# os.chdir('/Users/jonathantso/Desktop/Code/uic_git/cs512/hw2/code')
 
 class Conv(nn.Module):
     """
@@ -72,12 +72,14 @@ class Conv(nn.Module):
         :return:
         """
 
+
 ################################################################################################################
-dataset = dload.get_dataset()
-data = dataset.data
+if __name__ == "__main__":
+    dataset = dload.get_dataset()
+    data = dataset.data
 
-x = torch.tensor(data[0:5])
+    x = torch.tensor(data[0:5])
 
-a = Conv()
-b = a.forward(x)
-print(b.shape)
+    a = Conv()
+    b = a.forward(x)
+    print(b.shape)

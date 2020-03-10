@@ -13,7 +13,7 @@ import numpy as np
 from crf import CRF
 
 import check_grad, train_crf, max_sum_solution
-import conv
+import conv_old, utils
 
 
 class CRFGradFunction(Function):
@@ -25,9 +25,9 @@ class CRFGradFunction(Function):
         data = [(i, j) for i, j in zip(numpy_input_y, numpy_input_x)]
 
         n = len(data)
-        result = -1 * train_crf.func(numpy_params, data, 1000)
+        # result = -1 * train_crf.func(numpy_params, data, 1000)
 
-        # result = -1 * check_grad.compute_log_p_avg(numpy_params, data, len(data))
+        result = -1 * check_grad.compute_log_p_avg(numpy_params, data, len(data))
         # print(result)
         # print(numpy_input)
         ctx.save_for_backward(input_x, input_y, params)
@@ -43,9 +43,9 @@ class CRFGradFunction(Function):
         numpy_input_x, numpy_input_y = input_x.detach().numpy(), input_y.detach().numpy()
         data = [(i, j) for i, j in zip(numpy_input_y, numpy_input_x)]
         
-        result = train_crf.func_prime(numpy_params, data, 1000)
+        # result = train_crf.func_prime(numpy_params, data, 1000)
         # print(data)
-        # result = check_grad.gradient_avg(numpy_params, data, len(data))
+        result = check_grad.gradient_avg(numpy_params, data, len(data))
         # print(result.shape)
         # numpy_go = grad_output.numpy()
 
@@ -68,7 +68,7 @@ class CRF(nn.Module):
         self.batch_size = batch_size
         self.use_cuda = torch.cuda.is_available()
 
-        self.cnn = conv.Conv()
+        self.cnn = conv_old.Conv()
 
         ### Use GPU if available
         if self.use_cuda:
@@ -77,27 +77,91 @@ class CRF(nn.Module):
         # self.W = torch.zeros([num_labels * input_dim])
         # self.T = torch.zeros([num_labels * num_labels])
         self.params = nn.Parameter(torch.empty(self.num_labels * self.input_dim + self.num_labels * self.num_labels,))
+        
+        # self.init_weights()
+        
+        params = utils.load_model_params('../data/model.txt')
+        W = utils.extract_w(params)
+        T = utils.extract_t(params)
+        self.weights = nn.Parameter(torch.tensor(W, dtype=torch.float))
+        self.transition = nn.Parameter(torch.tensor(T, dtype=torch.float))
+
+        # self.weights = nn.Parameter(torch.empty((self.num_labels, self.input_dim) ))
+        # self.transition = nn.Parameter(torch.empty((self.num_labels, self.num_labels) ))
         # self.init_params()
-        self.init_weights()
 
     def init_weights(self):
         nn.init.zeros_(self.params)
+
         # nn.init.uniform_(self.params, -0.1, 0.1)
 
-    # def init_params(self):
-    #     """
-    #     Initialize trainable parameters of CRF here
-    #     """
-    #     # init_param = torch.zeros([self.num_labels * self.input_dim + self.num_labels * self.num_labels, ], requires_grad=True)
-    #     self.params = nn.Parameter(init_param)
-        # self.params = torch.zeros([26 * 128 + 26 * 26, ], dtype=torch.int32)
+    def init_params(self):
+        """
+        Initialize trainable parameters of CRF here
+        """
+        # init_param = torch.zeros([self.num_labels * self.input_dim + self.num_labels * self.num_labels, ], requires_grad=True)
+        nn.init.zeros_(self.weights)
+        nn.init.zeros_(self.transition)
+    
+        # nn.init.uniform_(self.weights, -0.1, 0.1)
+        # nn.init.uniform_(self.transition, -0.1, 0.1)
 
+    def _comput_prob(self, x, y):
+        sum_val = torch.tensor(0.0, dtype=torch.float)
+
+        for i in range(len(x)-1):
+            sum_val += torch.dot(x[i, :], self.weights[y[i], :])
+            sum_val += self.transition[y[i], y[i+1]]
+
+        n = len(x)-1
+        sum_val += torch.dot(x[n, :], self.weights[y[n], :])
+        
+        return torch.exp(sum_val)
+
+    def _forward_algorithm(self, x, y):
+        # alpha = np.zeros((self.n, self.letter_size))
+        # print(y)
+        alpha = torch.zeros((len(x), self.num_labels ))
+        for i in range(1, len(x)):
+            tmp = alpha[i - 1] + self.transition.t()
+            tmp_max = torch.max(tmp, 0)[0]
+            
+            tmp = (tmp.t() - tmp_max).t()
+            tmp = torch.exp(tmp + torch.matmul(x[i-1, :], self.weights.t()))
+            alpha[i] = tmp_max + torch.log(torch.sum(tmp, 1))
+
+        return alpha
+
+    def _compute_z(self, x, alpha, seq_len):
+        # print(x.shape, self.weights.t().shape)
+        # print(alpha[seq_len], torch.mm(x, self.weights.t())[-1])
+
+        return torch.sum(torch.exp(alpha[seq_len] + torch.mm(x, self.weights.t())[-1]))
+        # return np.sum(np.exp(alpha[-1] + np.dot(self.X, self.W.T)[-1]))
+
+    def _compute_log_prob(self, input_x, input_y):
+        sum_num = self._comput_prob(input_x, input_y)
+        alpha = self._forward_algorithm(input_x, input_y)
+
+        
+        seq_len = len(input_y.nonzero())-1
+        # print(seq_len)
+        # print(sum_num, self._compute_z(input_x, alpha, seq_len))
+        return torch.log(sum_num / self._compute_z(input_x, alpha, seq_len))
+    
     def get_conv_feats(self, x):
         return self.cnn.forward(x)
 
     def loss(self, input_x, input_y):
         # feat_x = self.get_conv_feats(input_x)
-        return CRFGradFunction.apply(input_x, input_y, self.params)
+        # return CRFGradFunction.apply(feat_x, input_y, self.params)
+        
+        total = torch.tensor(0.0, dtype=torch.float)
+        for i in range(len(input_x)):
+            total += self._compute_log_prob(input_x[i], input_y[i])
+            # print(self._compute_log_prob(input_x[i], input_y[i]))
+        # print(total)
+        return (-1) * (total/self.batch_size)
 
     def forward(self, input_x):
         numpy_input_x, numpy_params = input_x.detach().numpy(), self.params.detach().numpy()
@@ -109,25 +173,26 @@ class CRF(nn.Module):
         
         return torch.from_numpy(result)
 
+
 # Tunable parameters
 batch_size = 256
 num_epochs = 10
 max_iters  = 1000
-print_iter = 25 # Prints results every n iterations
+print_iter = 5 # Prints results every n iterations
 conv_shapes = [[1,64,128]] #
 
 
 # Model parameters
 input_dim = 128
 embed_dim = 64
-num_labels = 26
+num_labels = 27
 cuda = torch.cuda.is_available()
 
 # Instantiate the CRF model
 crf = CRF(input_dim, embed_dim, conv_shapes, num_labels, batch_size)
 
-opt = optim.LBFGS(crf.parameters())
-# opt = optim.SGD(crf.parameters(), lr=0.01, momentum=0.9)
+# opt = optim.LBFGS(crf.parameters())
+opt = optim.SGD(crf.parameters(), lr=0.01, momentum=0.9)
 
 dataset = get_dataset()
 
@@ -159,6 +224,24 @@ print('Loaded dataset... ')
 
 step = 0
 
+# data = utils.read_data_seq('../data/train_mini.txt')
+# for i in data:
+#     # print(i)
+#     train_X = torch.tensor(i[1]).float().unsqueeze(0)
+#     train_Y = torch.tensor(i[0]).long().unsqueeze(0)
+
+#     # print(train_Y.shape, train_X.shape)
+
+#     def closure():
+#         opt.zero_grad()
+#         loss = crf.loss(train_X, train_Y)
+#         print('loss:', loss)
+#         loss.backward()
+#         return loss
+
+#     opt.step(closure)
+
+
 for i_batch, sample in enumerate(train_loader):
     train_X = sample[0]
     train_Y = sample[1]
@@ -170,22 +253,21 @@ for i_batch, sample in enumerate(train_loader):
 
     # res = output.backward()
 
-    def closure():
-        opt.zero_grad()
-        loss = crf.loss(train_X, train_Y)
-        print('loss:', loss)
-        loss.backward()
-        return loss
+    # def closure():
+    #     opt.zero_grad()
+    #     loss = crf.loss(train_X, train_Y)
+    #     print('loss:', loss)
+    #     loss.backward()
+    #     return loss
 
-    opt.step(closure)
+    # opt.step(closure)
 
-    # opt.zero_grad()
-    # loss = crf.loss(train_X, train_Y)
+    opt.zero_grad()
+    loss = crf.loss(train_X, train_Y)
 
-    # print('loss:', loss)
-    # loss.backward()
-    #     # return loss
-    # opt.step()
+    print('loss:', loss)
+    loss.backward()
+    opt.step()
 
     # opt.step(closure)
 
