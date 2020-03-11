@@ -4,18 +4,26 @@ import data_loader as dload
 import tensorflow as tf
 import numpy as np
 import sys
+from torch.nn.parameter import Parameter
+# import conv 
 
 class custom2D(nn.Module):
   def __init__(self, in_channels = 1, out_channels = 1, kernel_size = (3,3), padding = False, stride = 1):
+    super().__init__()
+
     self.in_channels = in_channels
     self.out_channels = out_channels
     self.kernel_size = kernel_size
     self.padding = padding
     self.stride = stride
 
+    self.dummy_parameter = Parameter(torch.randn(2,3), requires_grad=False) #we do not use this at all, so it does not matter
+    self.kernel = Parameter(torch.tensor([[1,0,1], [0,1,0], [1,0,1]]), requires_grad=False) 
+
   def convolution_2d(self, letter, kernel):
     in_channels = self.in_channels
     out_channels = self.out_channels
+
     if(kernel.shape != self.kernel_size):
       print('Error: kernel passed with shape {}, should be shape {}'.format(kernel.shape, self.kernel_size))
       sys.exit()
@@ -36,7 +44,6 @@ class custom2D(nn.Module):
     kernel_size = kernel.shape[0] #get the size of the kernel, we assume ours is a square
 
     #if there is padding, we need to account for it
-    # if padding == True or isLetter:
     if padding == True:
       width_out = int(letter.shape[1])
       length_out = int(letter.shape[0])
@@ -47,7 +54,7 @@ class custom2D(nn.Module):
       pad = 0
 
     #make a bunch of zeroes in the form of a matrix that matches expected output
-    to_return = np.zeros((int(length_out), int(width_out)))
+    to_return = torch.zeros((int(length_out), int(width_out)))
 
     #update the to_return object
     for i in range(0,letter.shape[0] - kernel_size + 1, stride):
@@ -73,3 +80,24 @@ class custom2D(nn.Module):
     else:
       to_return = to_return.reshape([length_out, width_out])
     return to_return
+
+  def forward(self, x):
+        
+    batch_size, w, l = x.shape
+
+    batch_vec = []
+    for batch_item in range(0,batch_size):
+        word_vec = []
+        word = x[batch_item]
+
+        for word_letter in range(0,w):
+            letter = word[word_letter]
+            convoluted_letter = self.convolution_2d(letter = letter, kernel = self.kernel).flatten()
+
+            word_vec.append(convoluted_letter)
+        
+        batch_vec.append(word_vec)
+    
+    batch_vec = torch.tensor(batch_vec)
+    
+    return batch_vec
