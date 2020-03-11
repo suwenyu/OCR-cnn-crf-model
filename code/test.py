@@ -11,10 +11,15 @@ import torch.utils.data as data_utils
 from data_loader import get_dataset
 import numpy as np
 from crf import CRF
+import conv 
+import convolution_2d as conv2d
 
 import check_grad, train_crf, max_sum_solution
 import conv_old, utils, optimizer
 
+import os
+os.system('clear')
+os.chdir('/Users/jonathantso/Desktop/Code/uic_git/cs512/hw2/wevwev/code')
 
 class CRFGradFunction(Function):
     @staticmethod
@@ -122,7 +127,8 @@ class CRF(nn.Module):
         self.batch_size = batch_size
         self.use_cuda = torch.cuda.is_available()
 
-        self.cnn = conv_old.Conv(kernel_size=(3, 3))
+        # self.cnn = conv_old.Conv(kernel_size=(3, 3))
+        self.cnn = conv.Conv(kernel_size=(3,3))
 
         ### Use GPU if available
         if self.use_cuda:
