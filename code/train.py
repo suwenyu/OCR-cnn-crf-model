@@ -35,16 +35,17 @@ step = 0
 # Fetch dataset
 dataset = get_dataset()
 
+split = int(0.5 * len(dataset.data)) # train-test split
+train_data, test_data = dataset.data[:split], dataset.data[split:]
+train_target, test_target = dataset.target[:split], dataset.target[split:]
+
+# Convert dataset into torch tensors
+train = data_utils.TensorDataset(torch.tensor(train_data).float(), torch.tensor(train_target).long())
+test = data_utils.TensorDataset(torch.tensor(test_data).float(), torch.tensor(test_target).long())
+
+
 for i in range(num_epochs):
     print("Processing epoch {}".format(i))
-    dataset = get_dataset()
-    split = int(0.5 * len(dataset.data)) # train-test split
-    train_data, test_data = dataset.data[:split], dataset.data[split:]
-    train_target, test_target = dataset.target[:split], dataset.target[split:]
-
-    # Convert dataset into torch tensors
-    train = data_utils.TensorDataset(torch.tensor(train_data).float(), torch.tensor(train_target).long())
-    test = data_utils.TensorDataset(torch.tensor(test_data).float(), torch.tensor(test_target).long())
 
     # Define train and test loaders
     train_loader = data_utils.DataLoader(train,  # dataset to load from
@@ -97,9 +98,9 @@ for i in range(num_epochs):
             print(step, tr_loss.data, test_loss.data,
                        tr_loss.data / batch_size, test_loss.data / batch_size)
 
-			##################################################################
-			# IMPLEMENT WORD-WISE AND LETTER-WISE ACCURACY HERE
-			##################################################################
+            ##################################################################
+            # IMPLEMENT WORD-WISE AND LETTER-WISE ACCURACY HERE
+            ##################################################################
 
             print(blah)
 
