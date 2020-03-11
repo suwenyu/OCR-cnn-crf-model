@@ -1,10 +1,12 @@
 import numpy as np
-import crf, utils, compute, check_grad, transform
+import crf, utils, compute, check_grad
 import time
 
 import max_sum_solution
 from scipy.optimize import fmin_bfgs
 import scipy.optimize as opt
+
+import torch
 
 def read_data():
     train_data = utils.read_data_seq('../data/train.txt')
@@ -100,17 +102,27 @@ def word_letter_accuracy(y_preds, y_label):
     letter_count = 0.0
     correct_letter = 0.0
 
+    
+
     for pred, label in zip(y_preds, y_label):
         #print("compare: ", pred, label)
         # count correct word
-        if(np.array_equal(pred, label)):
-            correct_word +=1
+        label_n = label[label.nonzero()]-1
+        # label_n = np.squeeze(label_n, axis=0)
+        # print(label_n)
+        # print(pred)
+
+        # if(np.array_equal(pred, label)):
+        #     correct_word +=1
 
         #count correct letter
-        for i in range(len(pred)):
+        for i in range(len(label_n)):
             letter_count+=1
-            if(pred[i]==label[i] and pred[i] != 0):
-                correct_letter+=1
+            print(pred[i], label_n[i][0])
+            if torch.equal(pred[i], label_n[i][0]):
+                correct_letter += 1
+            # if(pred[i]==label_n[i][0]):
+                # correct_letter+=1
                     
 
     print("correct_letter: ", correct_letter ,"correct_word: ", correct_word )

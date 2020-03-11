@@ -16,7 +16,7 @@ import math
 import numpy as np
 from scipy.optimize import check_grad, minimize
 
-K = 26
+K = 27
 imgSize = 128
 paraNum = K * K + K * imgSize
 

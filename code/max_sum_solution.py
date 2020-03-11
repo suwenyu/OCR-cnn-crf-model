@@ -8,7 +8,7 @@ def max_sum(X, W, T):
     
     letter_size = 26
     seq_len = X.shape[0]
-    
+
     l = np.zeros((seq_len, letter_size))
     tmp = [0] * (letter_size)
     y_ans = np.zeros(seq_len, dtype=np.int)

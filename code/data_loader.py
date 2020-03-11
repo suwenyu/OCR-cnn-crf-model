@@ -52,7 +52,6 @@ def get_dataset():
     # Flatten images into vectors.
     dataset.data = dataset.data.reshape(dataset.data.shape[:2] + (-1,))
 
-
     target = np.zeros(dataset.target.shape)
     for index, letter in np.ndenumerate(dataset.target):
         if letter:
@@ -70,3 +69,6 @@ def get_dataset():
     dataset.data = dataset.data[order]
     dataset.target = dataset.target[order]
     return dataset
+
+if __name__ == "__main__":
+    get_dataset()
