@@ -1,47 +1,39 @@
 import torch
 import torch.nn as nn
-import data_loader as dload
-import tensorflow as tf
-import numpy as np
 import sys
 from torch.nn.parameter import Parameter
-# import conv 
 
 class custom2D(nn.Module):
-  def __init__(self, in_channels = 1, out_channels = 1, kernel_size = (3,3), padding = False, stride = 1):
+  # def __init__(self, in_channels = 1, out_channels = 1, kernel_size = (3,3), padding = False, stride = 1):
+  def __init__(self, in_channels = 1, out_channels = 1, kernel = torch.randn(3,3), padding = False, stride = 1):
     super().__init__()
 
     self.in_channels = in_channels
     self.out_channels = out_channels
-    self.kernel_size = kernel_size
+    self.kernel_size = kernel.shape
     self.padding = padding
     self.stride = stride
-
-    self.dummy_parameter = Parameter(torch.randn(2,3), requires_grad=False) #we do not use this at all, so it does not matter
-    self.kernel = Parameter(torch.tensor([[1,0,1], [0,1,0], [1,0,1]]), requires_grad=False) 
+    self.kernel = kernel
 
   def convolution_2d(self, letter, kernel):
-    in_channels = self.in_channels
-    out_channels = self.out_channels
 
     if(kernel.shape != self.kernel_size):
       print('Error: kernel passed with shape {}, should be shape {}'.format(kernel.shape, self.kernel_size))
       sys.exit()
+
     padding = self.padding
     stride = self.stride
 
     original_shape = letter.shape
-    # isLetter = False
 
     #if it is a letter we are putting into the convolution (this restriction lets us test on assignment prompt matrix)
     if len(letter) == 128:
-      # isLetter = True
       letter = letter.reshape([16,8])
 
     letter_length = letter.shape[0]
     letter_width = letter.shape[1]
 
-    kernel_size = kernel.shape[0] #get the size of the kernel, we assume ours is a square
+    kernel_size = self.kernel.shape[0] #get the size of the kernel, we assume ours is a square
 
     #if there is padding, we need to account for it
     if padding == True:
@@ -82,22 +74,31 @@ class custom2D(nn.Module):
     return to_return
 
   def forward(self, x):
-        
-    batch_size, w, l = x.shape
+    if len(x.shape) == 3:
+      batch_size, w, l = x.shape
 
-    batch_vec = []
-    for batch_item in range(0,batch_size):
-        word_vec = []
-        word = x[batch_item]
+      # batch_vec = []
+      if self.padding == True:
+        batch_vec = torch.empty(size=(batch_size,14,128))
+        numerous_outchannels = torch.empty(size=(self.out_channels,batch_size,14,128))
+      else:
+        batch_vec = torch.empty(size=(batch_size,14,84))   
+        numerous_outchannels = torch.empty(size=(self.out_channels,batch_size,14,84))
 
-        for word_letter in range(0,w):
-            letter = word[word_letter]
-            convoluted_letter = self.convolution_2d(letter = letter, kernel = self.kernel).flatten()
+      for i in range(0,self.out_channels):
+        for batch_item in range(0,batch_size):
+            word_vec = []
+            word = x[batch_item]
 
-            word_vec.append(convoluted_letter)
-        
-        batch_vec.append(word_vec)
-    
-    batch_vec = torch.tensor(batch_vec)
-    
-    return batch_vec
+            for word_letter in range(0,w):
+                letter = word[word_letter]
+                convoluted_letter = self.convolution_2d(letter = letter, kernel = self.kernel).flatten()
+
+                word_vec.append(convoluted_letter)
+                batch_vec[batch_item][word_letter] = convoluted_letter
+        numerous_outchannels[i][batch_item][word_letter] = convoluted_letter
+      return numerous_outchannels
+      # elif len(x.shape) == 2:
+    else:
+      batch_vec = self.convolution_2d(letter = x, kernel = self.kernel)
+      return batch_vec
