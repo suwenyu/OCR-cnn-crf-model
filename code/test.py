@@ -13,44 +13,98 @@ import numpy as np
 from crf import CRF
 
 import check_grad, train_crf, max_sum_solution
-import conv_old, utils
+import conv_old, utils, optimizer
 
 
 class CRFGradFunction(Function):
     @staticmethod
-    def forward(ctx, input_x, input_y, params):
-        numpy_input_x, numpy_params = input_x.detach().numpy(), params.detach().numpy()
-        numpy_input_y = input_y.detach().numpy()
-        # print(numpy_input)
-        data = [(i, j) for i, j in zip(numpy_input_y, numpy_input_x)]
+    def forward(ctx, input_x, input_y, weights, transition):
+        numpy_input_x, numpy_input_y = input_x.detach().numpy(), input_y.detach().numpy()
+        numpy_weights, numpy_transition = weights.detach().numpy(), transition.detach().numpy()
+        
+        # print(input_x, input_y)
+        result = 0
+        for i in range(len(input_x)):
+            # seq_len = len(numpy_input_y[i].nonzero())-1
+            # print(seq_len)
+            # 
+            # print(input_x[:seq_len], input_y[:seq_len])
+            new_x, new_y = numpy_input_x[i][numpy_input_y[i].nonzero()], numpy_input_y[i][numpy_input_y[i].nonzero()]-1
 
-        n = len(data)
+
+            word = (new_y, new_x)
+            dots = optimizer.computeAllDotProduct(numpy_weights, word)
+            alpha, beta = optimizer.computeDP(word, numpy_weights, numpy_transition, dots)
+            # p1, p2 = optimizer.computeMarginal(word, numpy_weights, numpy_transition, alpha, beta, dots)
+            result += optimizer.logPYX(word, numpy_weights, numpy_transition, alpha, dots)
+        result = result / len(input_x)
+        # print(result)
+
+        # print(numpy_input)
+        # data = [(i, j) for i, j in zip(numpy_input_y, numpy_input_x)]
+
+        # n = len(data)
         # result = -1 * train_crf.func(numpy_params, data, 1000)
 
-        result = -1 * check_grad.compute_log_p_avg(numpy_params, data, len(data))
+        # result = -1 * check_grad.compute_log_p_avg(numpy_params, data, len(data))
         # print(result)
         # print(numpy_input)
-        ctx.save_for_backward(input_x, input_y, params)
+        ctx.save_for_backward(input_x, input_y, weights, transition)
 
-        return torch.as_tensor(result, dtype=torch.float)
+        return torch.as_tensor((-1)*result, dtype=torch.float)
 
     @staticmethod
     def backward(ctx, grad_output):
         grad_output = grad_output.detach()
-        input_x, input_y, params = ctx.saved_tensors
 
-        numpy_params = params.detach().numpy()
+        input_x, input_y, weights, transition = ctx.saved_tensors
+
+        numpy_weights, numpy_transition = weights.detach().numpy(), transition.detach().numpy()
         numpy_input_x, numpy_input_y = input_x.detach().numpy(), input_y.detach().numpy()
-        data = [(i, j) for i, j in zip(numpy_input_y, numpy_input_x)]
+        
+        batch, seq, imgSize = (numpy_input_x.shape)
+
+        K = 26
+        C = 1000
+        meandw = np.zeros((K, imgSize))
+        meandT = np.zeros((K, K))
+
+        for i in range(len(input_x)):
+            new_x, new_y = numpy_input_x[i][numpy_input_y[i].nonzero()], numpy_input_y[i][numpy_input_y[i].nonzero()]-1
+
+            word = (new_y, new_x)
+
+            dots = optimizer.computeAllDotProduct(numpy_weights, word)
+            alpha, beta = optimizer.computeDP(word, numpy_weights, numpy_transition, dots)
+            p1, p2 = optimizer.computeMarginal(word, numpy_weights, numpy_transition, alpha, beta, dots)
+            
+
+            dw = optimizer.computeGradientWy(word, p1)
+            dT = optimizer.computeGradientTij(word, p2)
+
+            meandw += dw
+            meandT += dT
+
+        meandw /= len(input_x)
+        meandT /= len(input_x)
+
+        meandw *= (-C)
+        meandT *= (-C)
+
+        meandw += numpy_weights
+        meandT += numpy_transition
+
+        # gradients = np.concatenate((meandw.flatten(), meandT.flatten()))
+        # data = [(i, j) for i, j in zip(numpy_input_y, numpy_input_x)]
         
         # result = train_crf.func_prime(numpy_params, data, 1000)
         # print(data)
-        result = check_grad.gradient_avg(numpy_params, data, len(data))
+        # result = check_grad.gradient_avg(numpy_params, data, len(data))
         # print(result.shape)
         # numpy_go = grad_output.numpy()
 
         # result = 0
-        return input_x, input_y, torch.from_numpy(result).to(torch.float)
+        return input_x, input_y, torch.from_numpy(meandw).to(torch.float), torch.from_numpy(meandT).to(torch.float)
 
 
 class CRF(nn.Module):
@@ -107,6 +161,7 @@ class CRF(nn.Module):
         # nn.init.uniform_(self.transition, -0.1, 0.1)
 
     def _comput_prob(self, x, y):
+
         sum_val = torch.tensor(0.0, dtype=torch.float)
 
         for i in range(len(x)-1):
@@ -132,44 +187,65 @@ class CRF(nn.Module):
 
         return alpha
 
-    def _compute_z(self, x, alpha, seq_len):
+    def _compute_z(self, x, alpha):
         # print(x.shape, self.weights.t().shape)
         # print(alpha[seq_len], torch.mm(x, self.weights.t())[-1])
+        tmp = torch.matmul(self.weights, x[-1]) + alpha[-1]
+        M = torch.max(tmp)
 
-        return torch.sum(torch.exp(alpha[seq_len] + torch.mm(x, self.weights.t())[-1]))
+        log_z = M + torch.log(torch.sum(torch.exp(tmp + (-1)*M )))
+        # print(log_z)
+        # M = torch.max(tmp)
+        # print(log_z)
+        return torch.exp(log_z)
+        # return torch.sum(torch.exp(alpha[-1] + torch.mm(x, self.weights.t())[-1]))
         # return np.sum(np.exp(alpha[-1] + np.dot(self.X, self.W.T)[-1]))
 
     def _compute_log_prob(self, input_x, input_y):
-        sum_num = self._comput_prob(input_x, input_y)
-        alpha = self._forward_algorithm(input_x, input_y)
-
-        
         seq_len = len(input_y.nonzero())-1
-        # print(seq_len)
-        # print(sum_num, self._compute_z(input_x, alpha, seq_len))
-        return torch.log(sum_num / self._compute_z(input_x, alpha, seq_len))
+        # 
+        # print(input_x[:seq_len], input_y[:seq_len])
+        new_x, new_y = input_x[:seq_len], input_y[:seq_len]-1
+        # new_x, new_y = input_x, input_y
+        # print(new_x, new_y, input_y[:seq_len])
+
+        sum_num = self._comput_prob(new_x, new_y)
+        alpha = self._forward_algorithm(new_x, new_y)
+
+        if sum_num == float("Inf"):
+            print("break here1")
+        if self._compute_z(new_x, alpha) == float("Inf"):
+            print("break here2")
+
+        # print(sum_num, self._compute_z(new_x, alpha))
+        return torch.log(sum_num / self._compute_z(new_x, alpha))
     
     def get_conv_feats(self, x):
         return self.cnn.forward(x)
 
     def loss(self, input_x, input_y):
+        # seq_len = len(input_y.nonzero())-1
+
         feat_x = input_x
         # feat_x = self.get_conv_feats(input_x)
-        # return CRFGradFunction.apply(feat_x, input_y, self.params)
+        return CRFGradFunction.apply(feat_x, input_y, self.weights, self.transition)
         
-        total = torch.tensor(0.0, dtype=torch.float)
-        for i in range(len(feat_x)):
-            total += self._compute_log_prob(feat_x[i], input_y[i])
+        # total = torch.tensor(0.0, dtype=torch.float)
+        # for i in range(len(feat_x)):
+        #     total += self._compute_log_prob(feat_x[i], input_y[i])
             # print(self._compute_log_prob(input_x[i], input_y[i]))
         # print(total)
+
         return (-1) * (total/self.batch_size)
 
     def forward(self, input_x):
-        numpy_input_x, numpy_params = input_x.detach().numpy(), self.params.detach().numpy()
+        numpy_input_x = input_x.detach().numpy()
+        numpy_weights = self.weights.detach().numpy()
+        numpy_transition = self.transition.detach().numpy()
         
         result = []
         for x in numpy_input_x:
-            result.append(max_sum_solution.max_sum(x, numpy_params))
+            result.append(max_sum_solution.max_sum(x, numpy_weights, numpy_transition))
         result = np.array(result)
         
         return torch.from_numpy(result)
@@ -186,15 +262,14 @@ conv_shapes = [[1,64,128]] #
 # Model parameters
 input_dim = 128
 embed_dim = 64
-num_labels = 27
+num_labels = 26
 cuda = torch.cuda.is_available()
 
 # Instantiate the CRF model
 crf = CRF(input_dim, embed_dim, conv_shapes, num_labels, batch_size)
 
-opt = optim.LBFGS(crf.parameters())
-# opt = optim.SGD(crf.parameters(), lr=0.01, momentum=0.9)
-
+# opt = optim.LBFGS(crf.parameters())
+opt = optim.SGD(crf.parameters(), lr=0.01, momentum=0.9)
 
 
 
@@ -294,7 +369,7 @@ for i in range(num_epochs):
             # IMPLEMENT WORD-WISE AND LETTER-WISE ACCURACY HERE
             ##################################################################
 
-            # print(blah)
+        #     # print(blah)
 
         step += 1
         if step > max_iters: raise StopIteration
@@ -305,20 +380,20 @@ del train, test
 
 
 
-# data = utils.read_data_seq('../data/train_mini.txt')
-# for i in data:
-#     # print(i)
-#     train_X = torch.tensor(i[1]).float().unsqueeze(0)
-#     train_Y = torch.tensor(i[0]).long().unsqueeze(0)
+data = utils.read_data_seq('../data/train_mini.txt')
+for i in data:
+    # print(i)
+    train_X = torch.tensor(i[1]).float().unsqueeze(0)
+    train_Y = torch.tensor(i[0]).long().unsqueeze(0)
 
-#     # print(train_Y.shape, train_X.shape)
+    # print(train_Y.shape, train_X.shape)
 
-#     def closure():
-#         opt.zero_grad()
-#         loss = crf.loss(train_X, train_Y)
-#         print('loss:', loss)
-#         loss.backward()
-#         return loss
+    def closure():
+        opt.zero_grad()
+        loss = crf.loss(train_X, train_Y)
+        print('loss:', loss)
+        loss.backward()
+        return loss
 
-#     opt.step(closure)
+    opt.step(closure)
 

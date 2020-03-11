@@ -93,9 +93,9 @@ def load_model_params(filename):
 
 
 def extract_w(params):
-    w = np.zeros((27, 128))
+    w = np.zeros((26, 128))
 
-    for i in range(1, 27):
+    for i in range(26):
         w[i] = params[128 * i: 128 * (i + 1)]
 
     return w
@@ -105,11 +105,11 @@ def extract_w(params):
 
 
 def extract_t(params):
-    t_ij = np.zeros((27, 27))
+    t_ij = np.zeros((26, 26))
 
     index = 0
-    for i in range(1, 27):
-        for j in range(1, 27):
+    for i in range(26):
+        for j in range(26):
             t_ij[j][i] = params[128 * 26 + index]
             index += 1
     # print(t_ij[25][25])
