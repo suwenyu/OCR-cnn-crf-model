@@ -19,7 +19,8 @@ class Conv(nn.Module):
         self.stride = stride
 
         #run init param to get the kernel, which will be updated with autograd
-        self.kernel = self.init_params()
+        # self.kernel = self.init_params()
+        self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]])
         self.conv1 = custom2d.custom2D(self.in_channels, self.out_channels, self.kernel, padding = self.padding, stride = self.stride)        
 
     # def parameters(self):
@@ -55,16 +56,15 @@ class Conv(nn.Module):
 ###############################################################################################################
 # dataset = dload.get_dataset()
 # data = dataset.data
-
 # x = torch.tensor(data[0:2])
-# a = Conv(kernel_size=(5,5), padding=True, stride = 1)
+# a = Conv(kernel_size=(3,3), padding=False, stride = 2)
 # b = a.forward(x)
 # print(b.shape)
 # print(b)
 
-# # X = [[1,1,1,0,0], [0,1,1,1,0], [0,0,1,1,1], [0,0,1,1,0], [0,1,1,0,0]]
-# # k = torch.tensor([[1,0,1], [0,1,0], [1,0,1]])
-# # data = torch.tensor(X)
-# # a = Conv(kernel_size=(3,3), padding=False, stride=1)
-# # b = a.forward(data)
-# # print("OUTPUT FINAL:\n",b)
+# X = [[1,1,1,0,0], [0,1,1,1,0], [0,0,1,1,1], [0,0,1,1,0], [0,1,1,0,0]]
+# k = torch.tensor([[1,0,1], [0,1,0], [1,0,1]])
+# data = torch.tensor(X)
+# a = Conv(kernel_size=(3,3), padding=False, stride=1)
+# b = a.forward(data)
+# print("OUTPUT FINAL:\n",b)

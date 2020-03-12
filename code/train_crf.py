@@ -118,7 +118,7 @@ def word_letter_accuracy(y_preds, y_label):
         #count correct letter
         for i in range(len(label_n)):
             letter_count+=1
-            print(pred[i], label_n[i][0])
+            # print(pred[i], label_n[i][0])
             if torch.equal(pred[i], label_n[i][0]):
                 correct_letter += 1
             # if(pred[i]==label_n[i][0]):
