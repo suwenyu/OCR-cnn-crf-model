@@ -52,19 +52,13 @@ class custom2D(nn.Module):
     #update the to_return object
     for i in range(0,letter.shape[0] - kernel_size + 1, stride):
       for j in range(0, letter.shape[1] - kernel_size + 1, stride):
-        section_of_interest = letter[i:i+kernel_size, j:j+kernel_size] #get the small area we want to look at with our kernel
+        #get each section of interest, get the summed val for every 1/1 match
+        summed_kernel_val = sum(letter[i:i+kernel_size, j:j+kernel_size].flatten() * kernel.flatten())
 
-        #for each section of interest, get the summed val for every 1/1 match
-        summed_kernel_val = 0
-        for k in range(0,kernel_size):
-          for l in range(0, kernel_size):
-            #add them all up together for that kernel section
-            summed_kernel_val += section_of_interest[k,l] * kernel[k,l]
-
-            #put the val into the to return variable
-            temp_i = int(i/stride + pad)
-            temp_j = int(j/stride + pad)
-            to_return[temp_i,temp_j] = summed_kernel_val
+        #put the val into the to return variable
+        temp_i = int(i/stride + pad)
+        temp_j = int(j/stride + pad)
+        to_return[temp_i,temp_j] = summed_kernel_val
     
     #if need to pad back to original shape, reshape back to original shape
     if padding == True:
