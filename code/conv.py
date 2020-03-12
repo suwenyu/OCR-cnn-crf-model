@@ -69,8 +69,6 @@ class Conv(nn.Module):
         
         new_feats = torch.empty(seq_len, batch_size, 1, self.width, self.length, dtype=torch.float)
         for i in range(seq_len):
-            # print(self.conv_pkg(new_x[i]))
-            # print(new_width, new_length)
             new_feats[i][:, :, :int(new_width), :int(new_length)] = self.conv_pkg(new_x[i])
 
         new_feats = new_feats.view(batch_size, seq_len, self.width * self.length)
