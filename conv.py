@@ -8,8 +8,6 @@ from torch.nn.parameter import Parameter
 import math
 import time
 
-import numpy as np
-
 class Conv(nn.Module):
     """
     Convolution layer.
@@ -25,15 +23,10 @@ class Conv(nn.Module):
         self.width = 8
         self.length = 16
 
-        self.use_cuda = torch.cuda.is_available()
-
         #run init param to get the kernel, which will be updated with autograd
-        # self.kernel = self.init_params()
-        self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]]) #to test the 5x5 check
-        self.conv_pkg = nn.Conv2d(1, 1, kernel_size = self.kernel_size, stride = self.stride, padding=self.padding)
-
-        if self.use_cuda:
-            [m.cuda() for m in self.modules()]
+        self.kernel = self.init_params()
+        # self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]])
+        # self.conv1 = custom2d.custom2D(self.in_channels, self.out_channels, self.kernel, padding = self.padding, stride = self.stride)
 
     def init_params(self):
         """
@@ -47,13 +40,10 @@ class Conv(nn.Module):
         Forward pass
         :return:
         """
-
-        # x = self.conv1(x)
-        # # x = F.relu(x)
-        # return x
+        start = time.time()
+        # print("time start:")
 
 
-        # start = time.time()
 
         #for the assignment
         if len(x.shape) == 3:
@@ -100,36 +90,6 @@ class Conv(nn.Module):
 
             return self.convolution_2d(letter = x, new_width = new_width, new_length = new_length, pad = pad).view(new_length,new_width)
             
-
-    def forward_pkg(self, x):
-        batch_size, seq_len, img = x.shape
-        new_x = x.view(seq_len, batch_size, 1, self.width, self.length)
-        # new_x = new_x.view()
-
-        new_width = self.width
-        new_length = self.length
-        
-        if not self.padding:
-            new_width = self.width - self.kernel_size + 1
-            new_length = self.length - self.kernel_size + 1
-        
-        if self.stride > 1:
-            new_width /= self.stride
-            new_length /= self.stride
-
-        new_width = np.ceil(new_width)
-        new_length = np.ceil(new_length)
-
-        
-        new_feats = torch.empty(seq_len, batch_size, 1, self.width, self.length, dtype=torch.float)
-        if self.use_cuda:
-            new_feats = new_feats.cuda()
-        
-        for i in range(seq_len):
-            new_feats[i][:, :, :int(new_width), :int(new_length)] = self.conv_pkg(new_x[i])
-
-        new_feats = new_feats.view(batch_size, seq_len, self.width * self.length)
-        return new_feats
         
 
     # def backward(self):
@@ -149,10 +109,12 @@ class Conv(nn.Module):
         letter = letter.view(self.length,self.width)
 
         #update the to_return object
+
+
         for i in range(0,letter.shape[0] - self.kernel.shape[0] + 1, self.stride):
             for j in range(0, letter.shape[1] - self.kernel.shape[0] + 1, self.stride):
                 #get each section of interest, get the summed val for every 1/1 match
-                summed_kernel_val = torch.sum(torch.mul(letter[i:i+self.kernel.shape[0], j:j+self.kernel.shape[0]],self.kernel))
+                summed_kernel_val = sum(letter[i:i+self.kernel.shape[0], j:j+self.kernel.shape[0]].flatten() * self.kernel.flatten())
 
                 #put the val into the to return variable
                 temp_i = int(i/self.stride + pad)
@@ -160,6 +122,7 @@ class Conv(nn.Module):
                 to_return[temp_i,temp_j] = summed_kernel_val
 
         return to_return.flatten()
+        # return to_return.reshape([self.length, self.width])
         
     
 ###############################################################################################################
@@ -174,6 +137,6 @@ class Conv(nn.Module):
 # X = [[1,1,1,0,0], [0,1,1,1,0], [0,0,1,1,1], [0,0,1,1,0], [0,1,1,0,0]]
 # k = torch.tensor([[1,0,1], [0,1,0], [1,0,1]])
 # data = torch.tensor(X)
-# a = Conv(kernel_size=(3,3), padding=False, stride=1)
+# a = Conv(kernel_size=(3,3), padding=True, stride=1)
 # b = a.forward(data)
 # print("OUTPUT FINAL:\n",b)

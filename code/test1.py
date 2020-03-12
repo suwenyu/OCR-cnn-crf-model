@@ -22,6 +22,8 @@ import max_sum_solution
 # os.system('clear')
 # os.chdir('/Users/jonathantso/Desktop/Code/uic_git/cs512/hw2/wevwev/code')
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 def logTrick(numbers):
     if len(numbers.shape) == 1:
         M = torch.max(numbers)
@@ -46,9 +48,7 @@ class CRF(nn.Module):
         self.batch_size = batch_size
         self.use_cuda = torch.cuda.is_available()
 
-        # self.cnn = conv_old.Conv(kernel_size=(3, 3))
         self.cnn = conv.Conv(kernel_size=(3,3), padding = 1, stride = 3)
-
         ### Use GPU if available
         if self.use_cuda:
             [m.cuda() for m in self.modules()]
@@ -63,12 +63,13 @@ class CRF(nn.Module):
         W = utils.extract_w(params)
         T = utils.extract_t(params)
         
-        self.weights = nn.Parameter(torch.tensor(W, dtype=torch.float))
-        self.transition = nn.Parameter(torch.tensor(T, dtype=torch.float))
+        # self.weights = nn.Parameter(torch.tensor(W, dtype=torch.float))
+        # self.transition = nn.Parameter(torch.tensor(T, dtype=torch.float))
 
-        # self.weights = nn.Parameter(torch.empty((self.num_labels, self.input_dim) ))
-        # self.transition = nn.Parameter(torch.empty((self.num_labels, self.num_labels) ))
-        # self.init_params()
+
+        self.weights = nn.Parameter(torch.empty((self.num_labels, self.input_dim) ))
+        self.transition = nn.Parameter(torch.empty((self.num_labels, self.num_labels) ))
+        self.init_params()
 
     def init_weights(self):
         nn.init.zeros_(self.params)
@@ -98,6 +99,9 @@ class CRF(nn.Module):
         # print(y)
         m = len(y)
         alpha = torch.zeros((m, self.num_labels ))
+        
+        if self.use_cuda:
+            alpha = alpha.cuda()
 
         for i in range(1, m):
             alpha[i] = logTrick((dots[:, i - 1] + alpha[i - 1, :]).repeat(self.num_labels, 1) + self.transition.t())
@@ -125,9 +129,7 @@ class CRF(nn.Module):
         dots = self._computeAllDotProduct(new_x)
         alpha = self._forward_algorithm(new_x, new_y, dots)
 
-
         sum_num = self._logPYX(new_x, new_y, alpha, dots)
-
         # if sum_num == float("Inf"):
         #     print("break here1")
         # if self._compute_z(new_x, alpha) == float("Inf"):
@@ -137,29 +139,43 @@ class CRF(nn.Module):
         return sum_num
     
     def get_conv_feats(self, x):
-        return self.cnn.forward(x)
+        return self.cnn.forward_pkg(x)
 
     def loss(self, input_x, input_y):
         # seq_len = len(input_y.nonzero())-1
 
-        # feat_x = input_x
+        feat_x = input_x
         feat_x = self.get_conv_feats(input_x)
+        # print(feat_x)
+        # feat_x = input_x
+        # feat_x = self.get_conv_feats(input_x)
         # return CRFGradFunction.apply(feat_x, input_y, self.weights, self.transition)
         
         total = torch.tensor(0.0, dtype=torch.float)
+
+        if self.use_cuda:
+            total = total.cuda()
+
         for i in range(len(input_y)):
             total += self._compute_log_prob(feat_x[i], input_y[i])
             # print(self._compute_log_prob(input_x[i], input_y[i]))
-        # print(total)
 
         return (-1) * (total/self.batch_size)
 
     def forward(self, input_x):
+
         feat_x = self.get_conv_feats(input_x)
 
-        numpy_feat_x = feat_x.detach().numpy()
-        numpy_weights = self.weights.detach().numpy()
-        numpy_transition = self.transition.detach().numpy()
+        if self.use_cuda:
+            numpy_feat_x = feat_x.cpu().detach().numpy()
+            numpy_weights = self.weights.cpu().detach().numpy()
+            numpy_transition = self.transition.cpu().detach().numpy()
+        else:
+            numpy_feat_x = feat_x.detach().numpy()
+            numpy_weights = self.weights.detach().numpy()
+            numpy_transition = self.transition.detach().numpy()
+
+        
         
         result = []
         for x in numpy_feat_x:
@@ -186,8 +202,11 @@ cuda = torch.cuda.is_available()
 # Instantiate the CRF model
 crf = CRF(input_dim, embed_dim, conv_shapes, num_labels, batch_size)
 
-opt = optim.LBFGS(crf.parameters())
-# opt = optim.SGD(crf.parameters(), lr=0.01, momentum=0.9)
+
+crf = crf.to(device)
+
+# opt = optim.LBFGS(crf.parameters())
+opt = optim.SGD(crf.parameters(), lr=0.01, momentum=0.9)
 
 
 
@@ -285,6 +304,9 @@ for i in range(num_epochs):
 
             # print(step, tr_loss.data, test_loss.data,
             #            tr_loss.data / batch_size, test_loss.data / batch_size)
+
+            if cuda:
+                pred = pred.cpu()
 
             word_acc, letter_acc = train_crf.word_letter_accuracy(pred, test_Y)
             print("Letter Accuracy: %f, Word Accuracy: %f" % (letter_acc, word_acc) )
