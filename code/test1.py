@@ -139,7 +139,8 @@ class CRF(nn.Module):
         return sum_num
     
     def get_conv_feats(self, x):
-        return self.cnn.forward_pkg(x)
+        # return self.cnn.forward_pkg(x)
+        return self.cnn.forward(x)
 
     def loss(self, input_x, input_y):
         # seq_len = len(input_y.nonzero())-1
