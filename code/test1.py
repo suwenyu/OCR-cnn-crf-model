@@ -134,14 +134,13 @@ class CRF(nn.Module):
         return sum_num
     
     def get_conv_feats(self, x):
-        return self.cnn.forward(x)
+        return self.cnn.forward_pkg(x)
 
     def loss(self, input_x, input_y):
         # seq_len = len(input_y.nonzero())-1
 
         # feat_x = input_x
         feat_x = self.get_conv_feats(input_x)
-        # print(feat_x.shape)
         # return CRFGradFunction.apply(feat_x, input_y, self.weights, self.transition)
         
         total = torch.tensor(0.0, dtype=torch.float)
