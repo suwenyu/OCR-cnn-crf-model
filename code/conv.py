@@ -24,9 +24,8 @@ class Conv(nn.Module):
         self.length = 16
 
         #run init param to get the kernel, which will be updated with autograd
-        self.kernel = self.init_params()
-        # self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]])
-        # self.conv1 = custom2d.custom2D(self.in_channels, self.out_channels, self.kernel, padding = self.padding, stride = self.stride)
+        # self.kernel = self.init_params()
+        self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]]) #to test the 5x5 check
 
     def init_params(self):
         """
@@ -40,10 +39,7 @@ class Conv(nn.Module):
         Forward pass
         :return:
         """
-        start = time.time()
-        # print("time start:")
-
-
+        # start = time.time()
 
         #for the assignment
         if len(x.shape) == 3:
@@ -109,12 +105,10 @@ class Conv(nn.Module):
         letter = letter.view(self.length,self.width)
 
         #update the to_return object
-
-
         for i in range(0,letter.shape[0] - self.kernel.shape[0] + 1, self.stride):
             for j in range(0, letter.shape[1] - self.kernel.shape[0] + 1, self.stride):
                 #get each section of interest, get the summed val for every 1/1 match
-                summed_kernel_val = sum(letter[i:i+self.kernel.shape[0], j:j+self.kernel.shape[0]].flatten() * self.kernel.flatten())
+                summed_kernel_val = torch.sum(torch.mul(letter[i:i+self.kernel.shape[0], j:j+self.kernel.shape[0]],self.kernel))
 
                 #put the val into the to return variable
                 temp_i = int(i/self.stride + pad)
@@ -122,7 +116,6 @@ class Conv(nn.Module):
                 to_return[temp_i,temp_j] = summed_kernel_val
 
         return to_return.flatten()
-        # return to_return.reshape([self.length, self.width])
         
     
 ###############################################################################################################
@@ -137,6 +130,6 @@ class Conv(nn.Module):
 # X = [[1,1,1,0,0], [0,1,1,1,0], [0,0,1,1,1], [0,0,1,1,0], [0,1,1,0,0]]
 # k = torch.tensor([[1,0,1], [0,1,0], [1,0,1]])
 # data = torch.tensor(X)
-# a = Conv(kernel_size=(3,3), padding=True, stride=1)
+# a = Conv(kernel_size=(3,3), padding=False, stride=1)
 # b = a.forward(data)
 # print("OUTPUT FINAL:\n",b)
