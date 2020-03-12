@@ -85,23 +85,9 @@ class CRF(nn.Module):
         # nn.init.uniform_(self.weights, -0.1, 0.1)
         # nn.init.uniform_(self.transition, -0.1, 0.1)
 
-    def _comput_prob(self, x, y):
-
-        sum_val = torch.tensor(0.0, dtype=torch.float)
-
-        for i in range(len(x)-1):
-            sum_val += torch.dot(x[i, :], self.weights[y[i], :])
-            sum_val += self.transition[y[i], y[i+1]]
-
-        n = len(x)-1
-        sum_val += torch.dot(x[n, :], self.weights[y[n], :])
-        
-        return torch.exp(sum_val)
-
     def _computeAllDotProduct(self, x):
         dots = torch.matmul(self.weights, x.t())
         return dots
-
 
     def _forward_algorithm(self, x, y, dots):
         # alpha = np.zeros((self.n, self.letter_size))
@@ -113,29 +99,8 @@ class CRF(nn.Module):
             alpha[i] = logTrick((dots[:, i - 1] + alpha[i - 1, :]).repeat(self.num_labels, 1) + self.transition.t())
             # print(alpha[i])
 
-        # for i in range(1, len(x)):
-        #     tmp = alpha[i - 1] + self.transition.t()
-        #     tmp_max = torch.max(tmp, 0)[0]
-            
-        #     tmp = (tmp.t() - tmp_max).t()
-        #     tmp = torch.exp(tmp + torch.matmul(x[i-1, :], self.weights.t()))
-        #     alpha[i] = tmp_max + torch.log(torch.sum(tmp, 1))
 
         return alpha
-
-    def _compute_z(self, x, alpha):
-        # print(x.shape, self.weights.t().shape)
-        # print(alpha[seq_len], torch.mm(x, self.weights.t())[-1])
-        tmp = torch.matmul(self.weights, x[-1]) + alpha[-1]
-        M = torch.max(tmp)
-
-        log_z = M + torch.log(torch.sum(torch.exp(tmp + (-1)*M )))
-        # print(log_z)
-        # M = torch.max(tmp)
-        # print(log_z)
-        return torch.exp(log_z)
-        # return torch.sum(torch.exp(alpha[-1] + torch.mm(x, self.weights.t())[-1]))
-        # return np.sum(np.exp(alpha[-1] + np.dot(self.X, self.W.T)[-1]))
 
     def _logPYX(self, x, y, alpha, dots):
         m = len(y)
@@ -173,8 +138,8 @@ class CRF(nn.Module):
     def loss(self, input_x, input_y):
         # seq_len = len(input_y.nonzero())-1
 
-        feat_x = input_x
-        # feat_x = self.get_conv_feats(input_x)
+        # feat_x = input_x
+        feat_x = self.get_conv_feats(input_x)
         # print(feat_x)
         # return CRFGradFunction.apply(feat_x, input_y, self.weights, self.transition)
         
@@ -187,12 +152,14 @@ class CRF(nn.Module):
         return (-1) * (total/self.batch_size)
 
     def forward(self, input_x):
-        numpy_input_x = input_x.detach().numpy()
+        feat_x = self.get_conv_feats(input_x)
+
+        numpy_feat_x = feat_x.detach().numpy()
         numpy_weights = self.weights.detach().numpy()
         numpy_transition = self.transition.detach().numpy()
         
         result = []
-        for x in numpy_input_x:
+        for x in numpy_feat_x:
             result.append(max_sum_solution.max_sum(x, numpy_weights, numpy_transition))
         result = np.array(result)
         
@@ -330,24 +297,4 @@ for i in range(num_epochs):
 del train, test
 
 
-
-
-
-
-# data = utils.read_data_seq('../data/train_mini.txt')
-# for i in data:
-#     # print(i)
-#     train_X = torch.tensor(i[1]).float().unsqueeze(0)
-#     train_Y = torch.tensor(i[0]).long().unsqueeze(0)
-
-#     # print(train_Y.shape, train_X.shape)
-
-#     def closure():
-#         opt.zero_grad()
-#         loss = crf.loss(train_X, train_Y)
-#         print('loss:', loss)
-#         # loss.backward()
-#         return loss
-
-#     opt.step(closure)
 
