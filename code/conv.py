@@ -27,7 +27,7 @@ class Conv(nn.Module):
         # self.kernel = self.init_params()
         
         # self.conv1 = custom2d.custom2D(self.in_channels, self.out_channels, kernel_size , padding = self.padding, stride = self.stride)        
-        self.conv_pkg = nn.Conv2d(1, 1, kernel_size=self.kernel_size, padding = 1)
+        self.conv_pkg = nn.Conv2d(1, 1, kernel_size = self.kernel_size, stride = self.stride, padding=self.padding)
 
     # def parameters(self):
         # return [self.kernel]
@@ -55,19 +55,23 @@ class Conv(nn.Module):
         new_width = self.width
         new_length = self.length
         
-        # if not self.padding:
-        #     new_width = self.width - self.kernel_size + 1
-        #     new_length = self.length - self.kernel_size + 1
+        if not self.padding:
+            new_width = self.width - self.kernel_size + 1
+            new_length = self.length - self.kernel_size + 1
         
-        # if self.stride > 1:
-        #     new_width /= self.stride
-        #     new_length /= self.stride
+        if self.stride > 1:
+            new_width /= self.stride
+            new_length /= self.stride
+
+        new_width = np.ceil(new_width)
+        new_length = np.ceil(new_length)
+
         
         new_feats = torch.empty(seq_len, batch_size, 1, self.width, self.length, dtype=torch.float)
         for i in range(seq_len):
             # print(self.conv_pkg(new_x[i]))
             # print(new_width, new_length)
-            new_feats[i][:, :, :new_width, :new_length] = self.conv_pkg(new_x[i])
+            new_feats[i][:, :, :int(new_width), :int(new_length)] = self.conv_pkg(new_x[i])
 
         new_feats = new_feats.view(batch_size, seq_len, self.width * self.length)
         return new_feats

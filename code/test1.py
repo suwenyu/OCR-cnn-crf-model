@@ -47,7 +47,7 @@ class CRF(nn.Module):
         self.use_cuda = torch.cuda.is_available()
 
         # self.cnn = conv_old.Conv(kernel_size=(3, 3))
-        self.cnn = conv.Conv(kernel_size=(3,3), padding = 1)
+        self.cnn = conv.Conv(kernel_size=(3,3), padding = 1, stride = 3)
 
         ### Use GPU if available
         if self.use_cuda:
@@ -63,8 +63,11 @@ class CRF(nn.Module):
         W = utils.extract_w(params)
         T = utils.extract_t(params)
         
-        self.weights = nn.Parameter(torch.empty((self.num_labels, self.input_dim) ))
-        self.transition = nn.Parameter(torch.empty((self.num_labels, self.num_labels) ))
+        self.weights = nn.Parameter(torch.tensor(W, dtype=torch.float))
+        self.transition = nn.Parameter(torch.tensor(T, dtype=torch.float))
+
+        # self.weights = nn.Parameter(torch.empty((self.num_labels, self.input_dim) ))
+        # self.transition = nn.Parameter(torch.empty((self.num_labels, self.num_labels) ))
         # self.init_params()
 
     def init_weights(self):
