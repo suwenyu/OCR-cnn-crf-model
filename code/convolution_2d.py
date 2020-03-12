@@ -5,15 +5,18 @@ from torch.nn.parameter import Parameter
 
 class custom2D(nn.Module):
   #def __init__(self, in_channels = 1, out_channels = 1, kernel_size = (3,3), padding = False, stride = 1):
-  def __init__(self, in_channels = 1, out_channels = 1, kernel = torch.randn(3,3), padding = False, stride = 1):
+  def __init__(self, in_channels = 1, out_channels = 1, kernel_size = (3, 3), padding = False, stride = 1):
     super().__init__()
 
     self.in_channels = in_channels
     self.out_channels = out_channels
-    self.kernel_size = kernel.shape
+    self.kernel_size = kernel_size
     self.padding = padding
     self.stride = stride
-    self.kernel = kernel
+    self.kernel = self.init_params()
+
+  def init_params(self):
+    return Parameter(torch.randn(self.kernel_size), requires_grad=True)
 
   def convolution_2d(self, letter, kernel):
 
@@ -21,33 +24,33 @@ class custom2D(nn.Module):
       print('Error: kernel passed with shape {}, should be shape {}'.format(kernel.shape, self.kernel_size))
       sys.exit()
 
-    padding = self.padding
-    stride = self.stride
+    # padding = self.padding
+    # stride = self.stride
 
-    original_shape = letter.shape
+    # original_shape = letter.shape
 
-    #if it is a letter we are putting into the convolution (this restriction lets us test on assignment prompt matrix)
-    if len(letter) == 128:
-      letter = letter.reshape([16,8])
+    # #if it is a letter we are putting into the convolution (this restriction lets us test on assignment prompt matrix)
+    # if len(letter) == 128:
+    #   letter = letter.reshape([16,8])
 
-    letter_length = letter.shape[0]
-    letter_width = letter.shape[1]
+    # letter_length = letter.shape[0]
+    # letter_width = letter.shape[1]
 
-    kernel_size = self.kernel.shape[0] #get the size of the kernel, we assume ours is a square
+    # kernel_size = self.kernel.shape[0] #get the size of the kernel, we assume ours is a square
 
-    #if there is padding, we need to account for it
-    if padding == True:
-      width_out = int(letter.shape[1])
-      length_out = int(letter.shape[0])
-      pad = (len(kernel) - 1) / 2
-    else:
-      width_out = int((letter_width - kernel_size)/stride +1)
-      length_out = int((letter_length - kernel_size)/stride +1)
-      pad = 0
-    self.length_out = length_out
-    self.width_out = width_out
+    # #if there is padding, we need to account for it
+    # if padding == True:
+    #   width_out = int(letter.shape[1])
+    #   length_out = int(letter.shape[0])
+    #   pad = (len(kernel) - 1) / 2
+    # else:
+    #   width_out = int((letter_width - kernel_size)/stride +1)
+    #   length_out = int((letter_length - kernel_size)/stride +1)
+    #   pad = 0
+    # self.length_out = length_out
+    # self.width_out = width_out
     #make a bunch of zeroes in the form of a matrix that matches expected output
-    to_return = torch.zeros((int(length_out), int(width_out)))
+    to_return = torch.zeros((int(self.length_out), int(self.width_out)))
 
     #update the to_return object
     for i in range(0,letter.shape[0] - kernel_size + 1, stride):
@@ -79,17 +82,19 @@ class custom2D(nn.Module):
     kernel = self.kernel
 
 
-
     if len(x.shape) == 3:
-      batch_size, w, l = x.shape
+      batch_size, seq, img = x.shape
       padding = self.padding
       stride = self.stride
-      letter_length = len(x[0][0])**(.5)
-      letter_width = len(x[0][0])/letter_length
+      letter_length = img**(.5)
+      letter_width = img/letter_length
 
-      if(len(x[0][0]) == 128):
+
+      if(img == 128):
         letter_length = 16
         letter_width = 8
+
+      
       if padding == True:
         width_out = int(letter_width)
         length_out = int(letter_length)
@@ -97,16 +102,22 @@ class custom2D(nn.Module):
         width_out = int((letter_width - kernel_size)/stride +1)
         length_out = int((letter_length - kernel_size)/stride +1)
 
+      self.length_out = length_out
+      self.width_out = width_out
+
       out_dim = width_out*length_out
+
       # batch_vec = []
 #      if self.padding == True:
-      batch_vec = torch.empty(size=(batch_size,14,out_dim))
-      numerous_outchannels = torch.empty(size=(self.out_channels,batch_size,14,out_dim))
+      batch_vec = torch.empty(size=(batch_size, seq, out_dim))
+      
+
+      numerous_outchannels = torch.empty(size=(self.out_channels, batch_size, seq, out_dim))
 #      else:
 #        batch_vec = torch.empty(size=(batch_size,14,84))   
 #        numerous_outchannels = torch.empty(size=(self.out_channels,batch_size,14,84))
 
-      for i in range(0,self.out_channels):
+      for i in range(0, self.out_channels):
         for batch_item in range(0,batch_size):
             word_vec = []
             word = x[batch_item]

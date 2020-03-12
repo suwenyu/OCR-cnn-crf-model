@@ -47,7 +47,7 @@ class CRF(nn.Module):
         self.use_cuda = torch.cuda.is_available()
 
         # self.cnn = conv_old.Conv(kernel_size=(3, 3))
-        self.cnn = conv.Conv(kernel_size=(3,3))
+        self.cnn = conv.Conv(kernel_size=(3,3), padding = 1)
 
         ### Use GPU if available
         if self.use_cuda:
@@ -55,18 +55,16 @@ class CRF(nn.Module):
 
         # self.W = torch.zeros([num_labels * input_dim])
         # self.T = torch.zeros([num_labels * num_labels])
-        self.params = nn.Parameter(torch.empty(self.num_labels * self.input_dim + self.num_labels * self.num_labels,))
+        # self.params = nn.Parameter(torch.empty(self.num_labels * self.input_dim + self.num_labels * self.num_labels,))
         
         # self.init_weights()
         
         params = utils.load_model_params('../data/model.txt')
         W = utils.extract_w(params)
         T = utils.extract_t(params)
-        self.weights = nn.Parameter(torch.tensor(W, dtype=torch.float))
-        self.transition = nn.Parameter(torch.tensor(T, dtype=torch.float))
-
-        # self.weights = nn.Parameter(torch.empty((self.num_labels, self.input_dim) ))
-        # self.transition = nn.Parameter(torch.empty((self.num_labels, self.num_labels) ))
+        
+        self.weights = nn.Parameter(torch.empty((self.num_labels, self.input_dim) ))
+        self.transition = nn.Parameter(torch.empty((self.num_labels, self.num_labels) ))
         # self.init_params()
 
     def init_weights(self):
@@ -79,6 +77,9 @@ class CRF(nn.Module):
         Initialize trainable parameters of CRF here
         """
         # init_param = torch.zeros([self.num_labels * self.input_dim + self.num_labels * self.num_labels, ], requires_grad=True)
+        # self.weights = nn.Parameter(torch.empty(self.num_labels, self.input_dim, ))
+        # self.transition = nn.Parameter(torch.empty(self.num_labels, self.num_labels, ))
+
         nn.init.zeros_(self.weights)
         nn.init.zeros_(self.transition)
     
@@ -140,7 +141,7 @@ class CRF(nn.Module):
 
         # feat_x = input_x
         feat_x = self.get_conv_feats(input_x)
-        # print(feat_x)
+        # print(feat_x.shape)
         # return CRFGradFunction.apply(feat_x, input_y, self.weights, self.transition)
         
         total = torch.tensor(0.0, dtype=torch.float)

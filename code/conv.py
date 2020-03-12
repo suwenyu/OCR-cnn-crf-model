@@ -12,18 +12,22 @@ class Conv(nn.Module):
     Convolution layer.
     """  
     
-    def __init__(self, kernel_size = (3,3), in_channels = 1, out_channels = 1, padding = False, stride = 1): #default to a 3x3 kernel
+    def __init__(self, kernel_size = (3,3), in_channels = 1, out_channels = 1, padding = 0, stride = 1): #default to a 3x3 kernel
         super(Conv, self).__init__()
         self.kernel_size = kernel_size[0]
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.padding = padding
+
         self.stride = stride
 
+        self.width = 8
+        self.length = 16
         #run init param to get the kernel, which will be updated with autograd
-        self.kernel = self.init_params()
-        self.conv1 = custom2d.custom2D(self.in_channels, self.out_channels, self.kernel, padding = self.padding, stride = self.stride)        
-        # self.conv1 = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1)
+        # self.kernel = self.init_params()
+        
+        self.conv1 = custom2d.custom2D(self.in_channels, self.out_channels, kernel_size , padding = self.padding, stride = self.stride)        
+        self.conv_pkg = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=self.padding)
 
     # def parameters(self):
         # return [self.kernel]
@@ -33,28 +37,35 @@ class Conv(nn.Module):
         Initialize the layer parameters
         :return:
         """
-        return Parameter(torch.randn(self.kernel_size,self.kernel_size), requires_grad=True)
+        # return Parameter(torch.randn(self.kernel_size,self.kernel_size), requires_grad=True)
 
-    def forward(self, x, padding = False):
+    def forward(self, x):
         """
         Forward pass
         :return:
         """
         x = self.conv1(x)
-        print(x)
         return x
-        # batch_size, seq_len, img = x.shape
-        # new_x = x.view(seq_len, batch_size, 1, 8, 16)
-        # # new_x = new_x.view()
 
-        # new_feats = torch.empty(seq_len, batch_size, 1, 8, 16, dtype=torch.float)
-        # for i in range(seq_len):
-        #     new_feats[i] = self.conv1(new_x[i])
+    def forward_pkg(self, x):
+        batch_size, seq_len, img = x.shape
+        new_x = x.view(seq_len, batch_size, 1, self.width, self.length)
+        # new_x = new_x.view()
 
-        # # x = F.relu(x)
-        # # print(new_feats.shape)
-        # new_feats = new_feats.view(batch_size, seq_len, 8 * 16)
-        # return new_feats
+        if not self.padding:
+            new_width = self.width - self.kernel_size + 1
+            new_length = self.length - self.kernel_size + 1
+        else:
+            new_width = self.width
+            new_length = self.length
+
+
+        new_feats = torch.empty(seq_len, batch_size, 1, self.width, self.length, dtype=torch.float)
+        for i in range(seq_len):
+            new_feats[i][:, :, :new_width, :new_length] = self.conv_pkg(new_x[i])
+
+        new_feats = new_feats.view(batch_size, seq_len, self.width * self.length)
+        return new_feats
         
 
     # def backward(self):
