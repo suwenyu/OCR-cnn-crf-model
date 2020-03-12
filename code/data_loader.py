@@ -46,6 +46,7 @@ class DataLoader:
         target = [x + ([''] * (max_length - len(x))) for x in target]
         return np.array(data), np.array(target)
 
+
 def get_dataset():
     dataset = DataLoader()
 
@@ -62,6 +63,26 @@ def get_dataset():
     # for index, letter in np.ndenumerate(dataset.target):
     #     if letter:
     #         target[index][ord(letter) - ord('a')] = 1
+    dataset.target = target
+
+    # Shuffle order of examples.
+    order = np.random.permutation(len(dataset.data))
+    dataset.data = dataset.data[order]
+    dataset.target = dataset.target[order]
+    return dataset
+
+def get_onehot():
+    dataset = DataLoader()
+
+    # Flatten images into vectors.
+    dataset.data = dataset.data.reshape(dataset.data.shape[:2] + (-1,))
+
+
+    #One-hot encode targets.
+    target = np.zeros(dataset.target.shape + (26,))
+    for index, letter in np.ndenumerate(dataset.target):
+        if letter:
+            target[index][ord(letter) - ord('a')] = 1
     dataset.target = target
 
     # Shuffle order of examples.

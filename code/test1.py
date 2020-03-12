@@ -174,7 +174,7 @@ class CRF(nn.Module):
         # seq_len = len(input_y.nonzero())-1
 
         feat_x = input_x
-        # feat_x = self.get_conv_feats(input_x)
+        feat_x = self.get_conv_feats(input_x)
         # print(feat_x)
         # return CRFGradFunction.apply(feat_x, input_y, self.weights, self.transition)
         
