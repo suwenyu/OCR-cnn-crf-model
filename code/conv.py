@@ -126,13 +126,13 @@ class Conv(nn.Module):
         
     
 ###############################################################################################################
-dataset = dload.get_dataset()
-data = dataset.data
-x = torch.tensor(data[0:2])
-a = Conv(kernel_size=(3,3), padding=True, stride = 1)
-b = a.forward(x)
-print(b.shape)
-# print(b)
+# dataset = dload.get_dataset()
+# data = dataset.data
+# x = torch.tensor(data[0:2])
+# a = Conv(kernel_size=(3,3), padding=True, stride = 1)
+# b = a.forward(x)
+# print(b.shape)
+# # print(b)
 
 # X = [[1,1,1,0,0], [0,1,1,1,0], [0,0,1,1,1], [0,0,1,1,0], [0,1,1,0,0]]
 # k = torch.tensor([[1,0,1], [0,1,0], [1,0,1]])
