@@ -89,7 +89,8 @@ def get_onehot():
     order = np.random.permutation(len(dataset.data))
     dataset.data = dataset.data[order]
     dataset.target = dataset.target[order]
+    #print(dataset.target)
     return dataset
 
 if __name__ == "__main__":
-    get_dataset()
+   get_onehot()
