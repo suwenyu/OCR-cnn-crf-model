@@ -158,7 +158,7 @@ def train(epoch):
                 _, predicted = outputs.max(1)
                 #print(predicted)
                 #print(predicted)
-                letter_correct += predicted.eq(targets)。#not sure
+                letter_correct += predicted.eq(targets)#not sure
                 #letter_correct += (predicted==targets).sum().item() #correct letter in a word
 
             print("word: {}/{}".format(letter_correct, seq_len))
@@ -176,7 +176,7 @@ def train(epoch):
     epoch_letter_correct += batch_letter_correct
     print("Epoch letter acc: {:3f} ({}/{})".format((epoch_letter_correct/epoch_letter_total), epoch_letter_correct, epoch_letter_total))
     print("Epoch word acc: {:3f} ({}/{})".format((epoch_word_correct/epoch_word_total), epoch_word_correct, epoch_word_total))
-    print("Loss {:3f}".format(train_loss/len(train_loader))
+    print("Loss {:3f}".format(train_loss/len(train_loader)))
 
 #Testing
 def test(epoch):
