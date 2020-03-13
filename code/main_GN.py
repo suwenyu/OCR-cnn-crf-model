@@ -78,10 +78,10 @@ if device =='cuda':
 
 criterion = nn.CrossEntropyLoss()
 #optimizer
-optimizer = optim.LBFGS(net.parameters())
+#optimizer = optim.LBFGS(net.parameters())
 # opt = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
 #optimizer = optim.SGD(net.parameters(), lr = 0.1, momentum =0.9, weight_decay = 5e-4)
-#optimizer = optim.Adam(net.parameters(), lr = 0.1, eps = 1e-08)
+optimizer = optim.Adam(net.parameters(), lr = 0.1, eps = 1e-08)
 Err_train = []
 Acc_train = []
 Err_test =[]
@@ -156,15 +156,15 @@ def train(epoch):
 
                 train_loss += loss.item() #not sure
                 _, predicted = outputs.max(1)
-                #print(predicted)
-                #print(predicted)
-                letter_correct += predicted.eq(targets)#not sure
+                print(targets.shape)
+                print(predicted.shape)
+                letter_correct += predicted.eq(targets).sum().item()#not sure
                 #letter_correct += (predicted==targets).sum().item() #correct letter in a word
 
-            print("word: {}/{}".format(letter_correct, seq_len))
+            print("word: {}/{}".format(letter_correct, batch*seq_len))
             batch_letter_correct += letter_correct
-            batch_letter_total += seq_len
-            if(letter_correct == seq_len):
+            batch_letter_total += batch*seq_len
+            if(letter_correct == batch*seq_len):
                 bactch_word_correct +=1
 
         print("Batch letter acc: {:3f} ({}/{})".format((batch_letter_correct/batch_letter_total), batch_letter_correct, batch_letter_total))
@@ -176,7 +176,7 @@ def train(epoch):
     epoch_letter_correct += batch_letter_correct
     print("Epoch letter acc: {:3f} ({}/{})".format((epoch_letter_correct/epoch_letter_total), epoch_letter_correct, epoch_letter_total))
     print("Epoch word acc: {:3f} ({}/{})".format((epoch_word_correct/epoch_word_total), epoch_word_correct, epoch_word_total))
-    print("Loss {:3f}".format(train_loss/len(train_loader)))
+    print("Loss {:3f}".format(train_loss/batch_size))
 
 #Testing
 def test(epoch):
@@ -223,10 +223,10 @@ def test(epoch):
                 letter_correct+= predicted.eq(targets)
                 #letter_correct += (predicted==targets).sum().item() #correct letter in a word
 
-            print("word: {}/{}".format(letter_correct, seq_len))
+            print("word: {}/{}".format(letter_correct, batch*seq_len))
             batch_letter_correct += letter_correct
-            batch_letter_total += seq_len
-            if(letter_correct == seq_len):
+            batch_letter_total += batch*seq_len
+            if(letter_correct == batch*seq_len):
                 bactch_word_correct +=1
 
 
