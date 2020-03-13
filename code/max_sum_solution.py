@@ -1,5 +1,5 @@
 import numpy as np
-import utils, compute
+import utils
 
 
 def max_sum(X, W, T):

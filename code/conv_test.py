@@ -3,7 +3,7 @@ import torch
 import conv
 import torch.nn as nn
 import torch.nn.functional as F
-import tensorflow as tf
+
 import numpy as np
 import sys
 

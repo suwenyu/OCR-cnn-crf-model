@@ -1,9 +1,18 @@
 import torch
 import torch.nn as nn
 
-import numpy as np
-import train_crf, check_grad, utils
+import conv 
 
+import numpy as np
+import utils, max_sum_solution
+
+def logTrick(numbers):
+    if len(numbers.shape) == 1:
+        M = torch.max(numbers)
+        return M + torch.log(torch.sum(torch.exp(numbers - M)))
+    else:
+        M = torch.max(numbers, 1)[0]
+        return M + torch.log(torch.sum(torch.exp((numbers.t() - M).t()), 1))
 
 class CRF(nn.Module):
 
@@ -20,100 +29,134 @@ class CRF(nn.Module):
         self.batch_size = batch_size
         self.use_cuda = torch.cuda.is_available()
 
+        self.cnn = conv.Conv(kernel_size=(3, 3), padding = False, stride = 1)
         ### Use GPU if available
         if self.use_cuda:
             [m.cuda() for m in self.modules()]
 
+
+        params = utils.load_model_params('../data/model.txt')
+        W = utils.extract_w(params)
+        T = utils.extract_t(params)
+        
+        self.weights = nn.Parameter(torch.tensor(W, dtype=torch.float))
+        self.transition = nn.Parameter(torch.tensor(T, dtype=torch.float))
+
         # self.W = torch.zeros([num_labels * input_dim])
         # self.T = torch.zeros([num_labels * num_labels])
-        self.init_params()
+        # self.init_params()
 
     def init_params(self):
         """
         Initialize trainable parameters of CRF here
         """
-        init_param = torch.zeros([self.num_labels * self.input_dim + self.num_labels * self.num_labels, ])
-        self.params = nn.Parameter(init_param)
+        nn.init.zeros_(self.weights)
+        nn.init.zeros_(self.transition)
         # self.params = torch.zeros([26 * 128 + 26 * 26, ], dtype=torch.int32)
 
+    def _computeAllDotProduct(self, x):
+        dots = torch.matmul(self.weights, x.t())
+        return dots
 
-    def _comput_prob(self, x, y, W, T):
-        sum_val, t_sum = torch.tensor(0.), torch.tensor(0.)
+    def _forward_algorithm(self, x, y, dots):
+        # alpha = np.zeros((self.n, self.letter_size))
+        # print(y)
+        m = len(y)
+        alpha = torch.zeros((m, self.num_labels ))
+        
+        if self.use_cuda:
+            alpha = alpha.cuda()
 
-        for i in range(len(x)-1):
-            print(x[i, :].shape, W[y[i], :].shape)
-        #     sum_val += torch.mm(x[i, :], W[y[i], :])
-        #     sum_val += T[y[i], y[i+1]]
+        for i in range(1, m):
+            alpha[i] = logTrick((dots[:, i - 1] + alpha[i - 1, :]).repeat(self.num_labels, 1) + self.transition.t())
+            # print(alpha[i])
+        return alpha
 
-        # n = len(x)-1
-        # sum_val += torch.mm(x[n, :], W[y[n], :])
+    def _logPYX(self, x, y, alpha, dots):
+        m = len(y)
 
-        return torch.exp(sum_val)
+        res = sum([dots[y[i], i] for i in range(m)]) + sum([self.transition[y[i], y[i + 1]] for i in range(m - 1)])
+        logZ = logTrick(dots[:, m - 1] + alpha[m - 1, :])
+        res -= logZ
 
+        return res
 
-    def _compute_log_prob(self, x, y, w, t):
-        sum_num = self._comput_prob(x, y, w, t)
-        print(sum_num)
-        # alpha, tmp, message = self.forward()
+    def _compute_log_prob(self, input_x, input_y):
+        seq_len = len(input_y.nonzero())-1
+        # 
+        # print(input_x[:seq_len], input_y[:seq_len])
+        new_x, new_y = input_x[:seq_len], input_y[:seq_len]-1
+        # new_x, new_y = input_x, input_y
+        # print(new_x, new_y, input_y[:seq_len])
+        dots = self._computeAllDotProduct(new_x)
+        alpha = self._forward_algorithm(new_x, new_y, dots)
 
-        # return np.log(sum_num / self.compute_z(alpha))
+        sum_num = self._logPYX(new_x, new_y, alpha, dots)
+        # if sum_num == float("Inf"):
+        #     print("break here1")
+        # if self._compute_z(new_x, alpha) == float("Inf"):
+        #     print("break here2")
+
+        # print(sum_num, self._compute_z(new_x, alpha))
         return sum_num
 
 
-    def forward(self, X):
-        """
-        Implement the objective of CRF here.
-        The input (features) to the CRF module should be convolution features.
-        """
-        # features = X
-        # print(self.params)
-        # features = self.get_conv_feats(X)
-        # prediction = train_crf()
+    def forward(self, input_x):
+
+        feat_x = self.get_conv_features(input_x)
+
+        if self.use_cuda:
+            numpy_feat_x = feat_x.cpu().detach().numpy()
+            numpy_weights = self.weights.cpu().detach().numpy()
+            numpy_transition = self.transition.cpu().detach().numpy()
+        else:
+            numpy_feat_x = feat_x.detach().numpy()
+            numpy_weights = self.weights.detach().numpy()
+            numpy_transition = self.transition.detach().numpy()
+
         
-        # Find the best path, given the features.
-        # using max-sum alg from assign1
-        return (prediction)
-
-    def loss(self, X, labels):
-        """
-        Compute the negative conditional log-likelihood of a labelling given a sequence.
-        """
-
-        w = utils.extract_w(self.params)
-        t = utils.extract_t(self.params)
-
-        # data = [(i, j) for i, j in zip(labels, X)]
-
-        n = len(X)
+        result = []
+        for x in numpy_feat_x:
+            result.append(max_sum_solution.max_sum(x, numpy_weights, numpy_transition))
+        result = np.array(result)
         
-        # total = torch.tensor(0.)
-        scores = torch.zeros(self.batch_size, requires_grad=True)
+        return torch.from_numpy(result)
 
-        for i in range(n):
-            scores[i] = self._compute_log_prob(X[i], labels[i], w, t)
 
-        print(scores)
-        # loss = train_crf.func(self.params.data.numpy(), data, 10)
+    def loss(self, input_x, input_y):
+        # seq_len = len(input_y.nonzero())-1
+
+        feat_x = input_x
+        feat_x = self.get_conv_features(input_x)
+        # print(feat_x)
+        # feat_x = input_x
+        # feat_x = self.get_conv_feats(input_x)
+        # return CRFGradFunction.apply(feat_x, input_y, self.weights, self.transition)
         
-        # loss = torch.tensor(loss)
-        # self.X = X
-        # print(total)
+        total = torch.tensor(0.0, dtype=torch.float)
 
-        # compute_log_p_avg
-        return -1 * torch.sum(scores)
+        if self.use_cuda:
+            total = total.cuda()
 
-    def backward(self):
+        for i in range(len(input_y)):
+            total += self._compute_log_prob(feat_x[i], input_y[i])
+            # print(self._compute_log_prob(input_x[i], input_y[i]))
+
+        return (-1) * (total/self.batch_size)
+
+    # def backward(self):
         """
         Return the gradient of the CRF layer
         :return:
         """
 
-        gradient = blah
-        return gradient
+        # gradient = blah
+        # return gradient
 
     def get_conv_features(self, X):
         """
         Generate convolution features for a given word
         """
-        convfeatures = blah
-        return convfeatures
+        # return self.cnn.forward_pkg(X)
+        return self.cnn.forward(X)
+        # return convfeatures

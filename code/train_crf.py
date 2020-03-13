@@ -1,5 +1,5 @@
 import numpy as np
-import crf, utils, compute, check_grad
+import utils
 import time
 
 import max_sum_solution
@@ -116,11 +116,18 @@ def word_letter_accuracy(y_preds, y_label):
         #     correct_word +=1
 
         #count correct letter
+        tmp = 0
+
         for i in range(len(label_n)):
             letter_count+=1
             # print(pred[i], label_n[i][0])
             if torch.equal(pred[i], label_n[i][0]):
                 correct_letter += 1
+                tmp += 1
+        
+        if tmp == len(label_n):
+            correct_word += 1
+
             # if(pred[i]==label_n[i][0]):
                 # correct_letter+=1
                     
