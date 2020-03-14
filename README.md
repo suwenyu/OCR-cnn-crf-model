@@ -30,8 +30,18 @@ python3 conv_test.py
 The results will be printed out to the terminal
 
 ##### 4(a)
-4a was the implementation of the previous CRF model utilizing pytorch. This section is not designed to be run individually.
+This section is the implementation of the previous CRF model utilizing pytorch. This section is not designed to be run individually.
 
 ##### 4(b)
-4b runs the following model(s):
+This section runs the following model(s):
   1. CNN-CRF
+  
+You will need to open the crf.py file. Line 32, you will need to modify it to be the following:
+```
+self.cnn = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1) 
+```
+After the above is complete, save and run the following:
+ ```bash
+ python3 train.py
+ ```
+ 
