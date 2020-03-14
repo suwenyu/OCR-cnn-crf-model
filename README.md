@@ -71,7 +71,7 @@ After the above is complete, save and run the following:
 python3 train.py
 ```
 ##### 4(d)
-This section repeats 4b and 4c respectively, with utilization of GPU. Additional instructions to run will be thus will not be included.
+This section repeats 4b and 4c respectively, with utilization of GPU. Additional instructions to run thus will not be included.
 
 ##### GoogLeNet
 
