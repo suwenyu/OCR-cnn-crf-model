@@ -173,7 +173,7 @@ def train(epoch):
         print("Batch {} letter acc: {:3f} ({}/{})".format(b_index,(batch_letter_correct/batch_letter_total), batch_letter_correct, batch_letter_total))
         print("Batch {} word acc: {:3f} ({}/{})".format(b_index,(batch_word_correct/batch), batch_word_correct, batch))
         print("-----")
-    epoch_word_total += batch_word_total
+    epoch_word_total += batch
     epoch_word_correct += batch_letter_total
     epoch_letter_total += batch_letter_total
     epoch_letter_correct += batch_letter_correct
@@ -236,9 +236,9 @@ def test(epoch):
 
 
         print("Test Batch {} letter acc: {:3f} ({}/{})".format(b_index,(batch_letter_correct/batch_letter_total), batch_letter_correct, batch_letter_total))
-        print("Test Batch {} word acc: {:3f} ({}/{})".format(b_index, (batch_word_correct/batch_word_total), batch_word_correct, batch_word_total))
+        print("Test Batch {} word acc: {:3f} ({}/{})".format(b_index, (batch_word_correct/batch), batch_word_correct, batch))
         print("-----")
-    epoch_word_total += batch_word_total
+    epoch_word_total += batch
     epoch_word_correct += batch_word_correct
     epoch_letter_total += batch_letter_total
     epoch_letter_correct += batch_letter_correct
