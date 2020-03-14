@@ -245,8 +245,8 @@ def test(epoch):
         print("Test Batch {} letter acc: {:3f} ({}/{})".format(b_index,(batch_letter_correct/batch_letter_total), batch_letter_correct, batch_letter_total))
         print("Test Batch {} word acc: {:3f} ({}/{})".format(b_index, (batch_word_correct/batch), batch_word_correct, batch))
         print("-----")
-        test_letter_acc.append(batch_letter_correct/ batch_letter_total)
-        test_word_acc.append(batch_word_correct/batch)
+        #test_letter_acc.append(batch_letter_correct/ batch_letter_total)
+        #test_word_acc.append(batch_word_correct/batch)
 
     epoch_word_total += batch
     epoch_word_correct += batch_word_correct
