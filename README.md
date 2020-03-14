@@ -23,7 +23,7 @@ cd /path/to/assign/code
 
 ### Assignment 2
 ##### 3(a)
-3a included the implementation of the convolution layer to combine with each CRF model provided below.
+This section included the implementation of the convolution layer to combine with each CRF model provided below.
 ```bash
 python3 conv_test.py
 ```
@@ -60,8 +60,16 @@ self.cnn = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1)
 self.cnn = conv.Conv(kernel_size=(3, 3), padding = False, stride = 1) 
 ```
 After the above is complete, save and run the following:
- ```bash
- python3 train.py
- ```
- ##### 4(d)
- This section repeats 4b and 4c respectively, with utilization of GPU. Additional instructions to run will be thus will not be included.
+```bash
+python3 train.py
+```
+##### 4(d)
+This section repeats 4b and 4c respectively, with utilization of GPU. Additional instructions to run will be thus will not be included.
+
+##### 5(a)
+
+##### 5(b)
+
+##### 5(c)
+
+##### 5(d)
