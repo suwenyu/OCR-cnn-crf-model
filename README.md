@@ -43,9 +43,25 @@ You will need to open the crf.py file. Line 32, you will need to modify it to be
 ```
 self.cnn = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1) 
 ```
-
 After the above is complete, save and run the following:
  ```bash
  python3 train.py
  ```
- 
+ ##### 4(c)
+ This section runs the following model(s):
+  1. CNN-CNN-CRF
+ You will need to open the train.py file. Line 14, you will need to modify it to be the following:
+ ```
+batch_size = 64
+```
+You will need to open the crf.py file. Line 32, you will need to modify it to be the following:
+```
+self.cnn = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1) 
+self.cnn = conv.Conv(kernel_size=(3, 3), padding = False, stride = 1) 
+```
+After the above is complete, save and run the following:
+ ```bash
+ python3 train.py
+ ```
+ ##### 4(d)
+ This section repeats 4b and 4c respectively, with utilization of GPU. Additional instructions to run will be thus will not be included.
