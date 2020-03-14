@@ -83,10 +83,12 @@ criterion = nn.CrossEntropyLoss()
 
 #reshape dataset add channel = 1, with seq_len
 def modify_data(data, seq_len):
-    batch, seq, img_width, img_len = data.shape
+    batch = 1
+    #print(data.shape)
+    seq, img_width, img_len = data.shape[0], data.shape[1], data.shape[2]  #14*32*32
     data = data.view(seq, batch, img_width, img_len)
     #print(data.shape)
-    new = torch.empty(seq_len, batch, img_width, img_len) #14*256*1*32*32
+    new = torch.empty(seq_len, batch, img_width, img_len) #14*1*1*32*32
     for i in range(seq_len):
         new[i] = data[i]
     new = new.view(seq_len, batch, 1, img_width, img_len) 
@@ -121,30 +123,37 @@ def train(epoch):
         batch_word_correct = 0
 
         batch, seq, img_len = trainY.shape
-        #for i in range(count):
-        #for i in testY:
-            #seq_len = get_seqlen(trainY[i])
-        for i in trainY:
-            seq_len = get_seqlen(i)
 
+        for i in range(batch):
+            seq_len = get_seqlen(trainY[i])
+            #print(seq_len)
+            #print("features, labels shape: ", trainX[i].shape, trainY[i].shape) #14*26
             #modify feature and label to fit the model
-            features = modify_data(trainX, seq_len)
-            labels = trainY.view(batch, seq, img_len, 1)
+            features = modify_data(trainX[i], seq_len)
+            labels = trainY[i].view(seq, img_len, 1)
             labels = modify_data(labels, seq_len)
-            labels = labels.view(seq_len, batch, img_len)
+            labels = labels.view(seq_len, 1, img_len)
             
-            print("features, labels shape: ", features.shape, labels.shape)
+
+            #print("features, labels shape: ", features.shape, labels.shape)
 
             #train the model by its seq_len
             letter_correct = 0
             for i in range(seq_len): 
-                print(i)
+                #def closure():
+                #    optimizer.zero_grad()
+                #    outputs = net(features[i])
+                #    targets = torch.max(labels[i],1)[1].to(device)
+                #    loss = criterion(outputs, targets)
+                #    loss.backward
+
+                #optimizer.step(closure)
+                
                 optimizer.zero_grad()
                 outputs = net(features[i]) #256*26
-                targets = torch.max(labels[i], 1)[1]  #256
+                targets = torch.max(labels[i], 1)[1].to(device)  #256
                 #print(outputs.shape, targets.shape)
                 loss = criterion(outputs, targets)
-                
                 loss.backward()
                 optimizer.step()
 
@@ -152,19 +161,20 @@ def train(epoch):
                 _, predicted = outputs.max(1)
                 #print(targets.shape, predicted.shape)
                 letter_correct += predicted.eq(targets).sum().item() #correct letter in a word of seq
+                #print(letter_correct)
             
-            batch_letter_total += batch*seq_len
+            batch_letter_total += seq_len
             batch_letter_correct += letter_correct
-            print("Seq letter acc: {:3f} ({}/{})".format((letter_correct/(batch*seq_len)), letter_correct, batch*seq_len))
+            print("Seq letter acc: {:3f} ({}/{})".format((letter_correct/seq_len), letter_correct, seq_len))
             if(letter_correct == batch_letter_total):
                 bactch_word_correct +=1
 
-        print("Loss {:3f}".format(train_loss/(index+1)))
+        print("Loss {:3f}".format(train_loss/(b_index+1)))
         print("Batch {} letter acc: {:3f} ({}/{})".format(b_index,(batch_letter_correct/batch_letter_total), batch_letter_correct, batch_letter_total))
-        print("Batch {} word acc: {:3f} ({}/{})".format(b_index,(batch_word_correct/batch_word_total), batch_word_correct, batch_word_total))
+        print("Batch {} word acc: {:3f} ({}/{})".format(b_index,(batch_word_correct/batch), batch_word_correct, batch))
         print("-----")
     epoch_word_total += batch_word_total
-    epoch_word_correct += batch_word_correct
+    epoch_word_correct += batch_letter_total
     epoch_letter_total += batch_letter_total
     epoch_letter_correct += batch_letter_correct
     print("Epoch {} letter acc: {:3f} ({}/{})".format(epoch, (epoch_letter_correct/epoch_letter_total), epoch_letter_correct, epoch_letter_total))
@@ -185,45 +195,43 @@ def test(epoch):
         testX, testY = data[0], data[1] #256*14*32*32, 256*14*26
         testX, testY = testX.to(device), testY.to(device)
         seq_len = 0
+        test_loss = 0
         batch_letter_total=0
         batch_letter_correct =0
         batch_word_correct = 0
 
         batch, seq, img_len = testY.shape
-        #count = np.random.randint(batch)
-        #print(count)
-        #for i in range(count):
-        
-        #seq_len = get_seqlen(trainY[i])
+        for i in range(batch):
+            seq_len = get_seqlen(testY[i])
+            #print(seq_len)
 
-        for i in testY:
-            seq_len = get_seqlen(i)
-
-            features = modify_data(testX, seq_len)
-            labels = testY.view(batch, seq, img_len, 1)
+            #print("features, labels shape: ", testX[i].shape, testY[i].shape) #14*26
+            #modify feature and label to fit the model
+            features = modify_data(testX[i], seq_len)
+            labels = testY[i].view(seq, img_len, 1)
             labels = modify_data(labels, seq_len)
-            labels = labels.view(seq_len, batch, img_len)
+            labels = labels.view(seq_len, 1, img_len)
             
             print("features, labels shape: ", features.shape, labels.shape)
             
             letter_correct = 0
             for i in range(seq_len): 
-                print(i)
+                #print(i)
                 optimizer.zero_grad()
                 outputs = net(features[i])
-                targets = torch.max(labels[i], 1)[1]
+                targets = torch.max(labels[i], 1)[1].to(device)
                 loss = criterion(outputs, targets)
         
                 test_loss += loss.item()
                 _, predicted = outputs.max(1)
 
-                letter_correct+= predicted.eq(targets)
+                letter_correct+= predicted.eq(targets).sum().item()
                 #letter_correct += (predicted==targets).sum().item() #correct letter in a word
 
-            batch_letter_total += batch*seq_len
+            batch_letter_total += seq_len
             batch_letter_correct += letter_correct
-            print("Seq {} letter acc: {:3f} ({}/{})".format(i,(letter_correct/(batch*seq_len)),letter_correct, batch*seq_len))
-            if(letter_correct == batch_letter_total):
+            print("Seq {} letter acc: {:3f} ({}/{})".format(i,(letter_correct/seq_len),letter_correct, seq_len))
+            if(letter_correct == seq_len):
                 bactch_word_correct +=1
 
 
@@ -238,7 +246,7 @@ def test(epoch):
     print("Test Epoch {} word acc: {:3f} ({}/{})".format(epoch, (epoch_word_correct/epoch_word_total), epoch_word_correct, epoch_word_total))
 
 
-for epoch in range(0,3):
+for epoch in range(0,10):
     print("Epoch", epoch)
     start = time.time()
     train(epoch)
