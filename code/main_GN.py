@@ -141,7 +141,7 @@ def train(epoch):
                 print(i)
                 optimizer.zero_grad()
                 outputs = net(features[i]) #256*26
-                targets = torch.max(labels[i], 1)[1]  #256
+                targets = torch.max(labels[i], 1)[1].to(device)  #256
                 #print(outputs.shape, targets.shape)
                 loss = criterion(outputs, targets)
                 
