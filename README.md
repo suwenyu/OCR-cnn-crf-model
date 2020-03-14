@@ -23,7 +23,15 @@ cd /path/to/assign/code
 
 ### Assignment 2
 ##### 3(a)
+3a included the implementation of the convolution layer to combine with each CRF model provided below.
 ```bash
 python3 conv_test.py
 ```
 The results will be printed out to the terminal
+
+##### 4(a)
+4a was the implementation of the previous CRF model utilizing pytorch. This section is not designed to be run individually.
+
+##### 4(b)
+4b runs the following model(s):
+  1. CNN-CRF
