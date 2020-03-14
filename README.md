@@ -35,11 +35,15 @@ This section is the implementation of the previous CRF model utilizing pytorch. 
 ##### 4(b)
 This section runs the following model(s):
   1. CNN-CRF
-  
+You will need to open the train.py file. Line 14, you will need to modify it to be the following:
+```
+batch_size = 64
+```
 You will need to open the crf.py file. Line 32, you will need to modify it to be the following:
 ```
 self.cnn = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1) 
 ```
+
 After the above is complete, save and run the following:
  ```bash
  python3 train.py
