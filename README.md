@@ -73,10 +73,13 @@ python3 train.py
 ##### 4(d)
 This section repeats 4b and 4c respectively, with utilization of GPU. Additional instructions to run will be thus will not be included.
 
-##### 5(a)
+##### GoogLeNet
 
-##### 5(b)
-
-##### 5(c)
-
-##### 5(d)
+The model of GoogLeNet presents in 'googlenet.py'. To train the model:
+```bash
+python3 main_GN.py	
+```
+For ADAM optimizer:
+```
+optimizer = optim.Adam(net.parameters(), lr = 0.1, eps = 1e-08)
+```
