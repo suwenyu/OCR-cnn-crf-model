@@ -16,8 +16,14 @@ $ pip3 install numpy
 ```
 
 ### How to run
-Move to the folder named "code"
+To run the following programs, you will need to move into the folder named "code" which can be done with the following command
 ```bash
 cd /path/to/assign/code
 ```
 
+### Assignment 2
+##### 3(a)
+```bash
+python3 conv_test.py
+```
+The results will be printed out to the terminal
