@@ -29,7 +29,7 @@ class CRF(nn.Module):
         self.batch_size = batch_size
         self.use_cuda = torch.cuda.is_available()
 
-        self.cnn = conv.Conv(kernel_size=(3, 3), padding = False, stride = 1)
+        self.cnn = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1)
         ### Use GPU if available
         if self.use_cuda:
             [m.cuda() for m in self.modules()]
@@ -126,8 +126,9 @@ class CRF(nn.Module):
     def loss(self, input_x, input_y):
         # seq_len = len(input_y.nonzero())-1
 
-        feat_x = input_x
+        # feat_x = input_x
         feat_x = self.get_conv_features(input_x)
+
         # print(feat_x)
         # feat_x = input_x
         # feat_x = self.get_conv_feats(input_x)

@@ -1,0 +1,66 @@
+Processing epoch 0
+Loaded dataset... 
+0 tensor(60.6294, device='cuda:0') tensor(59.8161, device='cuda:0') tensor(0.2368, device='cuda:0') tensor(0.2337, device='cuda:0')
+correct_letter:  199.0 correct_word:  0.0
+letter:  1906.0 word:  256
+Letter Accuracy: 0.104407, Word Accuracy: 0.000000
+0 tensor(59.8161, device='cuda:0') tensor(0.2337, device='cuda:0')
+time: 178.90 seconds.
+time: 207.30 seconds.
+time: 236.08 seconds.
+time: 264.90 seconds.
+time: 294.29 seconds.
+5 tensor(64.0643, device='cuda:0') tensor(65.0799, device='cuda:0') tensor(0.2503, device='cuda:0') tensor(0.2542, device='cuda:0')
+correct_letter:  194.0 correct_word:  0.0
+letter:  2001.0 word:  256
+Letter Accuracy: 0.096952, Word Accuracy: 0.000000
+5 tensor(65.0799, device='cuda:0') tensor(0.2542, device='cuda:0')
+time: 390.80 seconds.
+time: 420.13 seconds.
+time: 449.02 seconds.
+time: 478.14 seconds.
+time: 506.80 seconds.
+10 tensor(64.5465, device='cuda:0') tensor(60.8094, device='cuda:0') tensor(0.2521, device='cuda:0') tensor(0.2375, device='cuda:0')
+correct_letter:  184.0 correct_word:  0.0
+letter:  1924.0 word:  256
+Letter Accuracy: 0.095634, Word Accuracy: 0.000000
+10 tensor(60.8094, device='cuda:0') tensor(0.2375, device='cuda:0')
+time: 603.95 seconds.
+time: 632.30 seconds.
+time: 660.47 seconds.
+time: 672.45 seconds.
+Processing epoch 1
+Loaded dataset... 
+time: 28.08 seconds.
+15 tensor(65.9767, device='cuda:0') tensor(63.6571, device='cuda:0') tensor(0.2577, device='cuda:0') tensor(0.2487, device='cuda:0')
+correct_letter:  193.0 correct_word:  0.0
+letter:  1970.0 word:  256
+Letter Accuracy: 0.097970, Word Accuracy: 0.000000
+15 tensor(63.6571, device='cuda:0') tensor(0.2487, device='cuda:0')
+time: 121.08 seconds.
+time: 148.68 seconds.
+time: 204.46 seconds.
+time: 232.40 seconds.
+time: 259.76 seconds.
+20 tensor(65.0091, device='cuda:0') tensor(63.8538, device='cuda:0') tensor(0.2539, device='cuda:0') tensor(0.2494, device='cuda:0')
+correct_letter:  185.0 correct_word:  0.0
+letter:  1975.0 word:  256
+Letter Accuracy: 0.093671, Word Accuracy: 0.000000
+20 tensor(63.8538, device='cuda:0') tensor(0.2494, device='cuda:0')
+time: 351.38 seconds.
+time: 378.93 seconds.
+time: 406.21 seconds.
+time: 433.67 seconds.
+time: 461.09 seconds.
+25 tensor(64.5850, device='cuda:0') tensor(59.3797, device='cuda:0') tensor(0.2523, device='cuda:0') tensor(0.2320, device='cuda:0')
+correct_letter:  189.0 correct_word:  0.0
+letter:  1886.0 word:  256
+Letter Accuracy: 0.100212, Word Accuracy: 0.000000
+25 tensor(59.3797, device='cuda:0') tensor(0.2320, device='cuda:0')
+time: 551.75 seconds.
+time: 579.09 seconds.
+time: 590.78 seconds.
+Processing epoch 2
+Loaded dataset... 
+time: 27.75 seconds.
+time: 55.33 seconds.

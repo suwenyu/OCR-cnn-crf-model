@@ -30,8 +30,10 @@ class Conv(nn.Module):
 
         #run init param to get the kernel, which will be updated with autograd
         # self.kernel = self.init_params()
-        self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]]) #to test the 5x5 check
-        
+        self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]], dtype=torch.float) #to test the 5x5 check
+        if self.use_cuda:
+            self.kernel = self.kernel.cuda()
+
         self.pad_size = 0
         if self.padding:
             self.pad_size = int((self.width - self.kernel_size + 1)/2)
@@ -40,6 +42,8 @@ class Conv(nn.Module):
 
         if self.use_cuda:
             [m.cuda() for m in self.modules()]
+
+        # self.kernel = Parameter(self.kernel)
 
     def init_params(self):
         """
@@ -77,6 +81,8 @@ class Conv(nn.Module):
 
             # return_from_forward = torch.empty(size=(batch_size,seq_len, new_width * new_length))
             return_from_forward = torch.empty(size = (batch_size, seq_len, self.width * self.length))
+            if self.use_cuda:
+                return_from_forward = return_from_forward.cuda()
 
             # print("time 1:", time.time() - start)
 
@@ -157,14 +163,18 @@ class Conv(nn.Module):
         # start = time.time()
 
         #make a bunch of zeroes in the form of a matrix that matches expected output
-        to_return = torch.zeros((int(new_length), int(new_width)))
+        to_return = torch.empty((int(new_length), int(new_width)), dtype=torch.float)
+        if self.use_cuda:
+            to_return = to_return.cuda()
+
+
         letter = letter.view(self.length,self.width)
 
         #update the to_return object
         for i in range(0,letter.shape[0] - self.kernel.shape[0] + 1, self.stride):
             for j in range(0, letter.shape[1] - self.kernel.shape[0] + 1, self.stride):
                 #get each section of interest, get the summed val for every 1/1 match
-                summed_kernel_val = torch.sum(torch.mul(letter[i:i+self.kernel.shape[0], j:j+self.kernel.shape[0]],self.kernel))
+                summed_kernel_val = torch.sum(torch.mul(letter[i:i+self.kernel.shape[0], j:j+self.kernel.shape[0]], self.kernel))
 
                 #put the val into the to return variable
                 temp_i = int(i/self.stride + pad)

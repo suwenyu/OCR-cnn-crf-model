@@ -108,6 +108,7 @@ def word_letter_accuracy(y_preds, y_label):
         #print("compare: ", pred, label)
         # count correct word
         label_n = label[label.nonzero()]-1
+        label_n = label_n.cpu()
         # label_n = np.squeeze(label_n, axis=0)
         # print(label_n)
         # print(pred)
