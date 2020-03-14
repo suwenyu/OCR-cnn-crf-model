@@ -77,8 +77,8 @@ if device =='cuda':
 
 #optimizer
 #optimizer = optim.LBFGS(net.parameters())
-#optimizer = optim.SGD(net.parameters(), lr = 0.1, momentum =0.9)
-optimizer = optim.Adam(net.parameters(), lr = 0.1, eps = 1e-08)
+optimizer = optim.SGD(net.parameters(), lr = 0.1, momentum =0.9)
+#optimizer = optim.Adam(net.parameters(), lr = 0.1, eps = 1e-08)
 criterion = nn.CrossEntropyLoss()
 
 #reshape dataset add channel = 1, with seq_len
@@ -103,6 +103,10 @@ def get_seqlen(data):
     seq_len = len((max_val!=0).nonzero())
     return seq_len
 
+train_word_acc = []
+train_letter_acc = []
+test_word_acc =[]
+test_letter_acc =[]
 #Training
 def train(epoch):
     net.train()
@@ -136,16 +140,18 @@ def train(epoch):
             
 
             #print("features, labels shape: ", features.shape, labels.shape)
-
+            #loss = torch.tensor(0, dtype=torch.float)
             #train the model by its seq_len
             letter_correct = 0
             for i in range(seq_len): 
                 #def closure():
-                #    optimizer.zero_grad()
-                #    outputs = net(features[i])
-                #    targets = torch.max(labels[i],1)[1].to(device)
-                #    loss = criterion(outputs, targets)
-                #    loss.backward
+                 #   global loss
+                 #   optimizer.zero_grad()
+                 #   outputs = net(features[i])
+                 #   targets = torch.max(labels[i],1)[1].to(device)
+                 #   loss = criterion(outputs, targets)
+                 #   loss.backward()
+                #    return loss
 
                 #optimizer.step(closure)
                 
@@ -166,13 +172,15 @@ def train(epoch):
             batch_letter_total += seq_len
             batch_letter_correct += letter_correct
             print("Seq letter acc: {:3f} ({}/{})".format((letter_correct/seq_len), letter_correct, seq_len))
-            if(letter_correct == batch_letter_total):
-                bactch_word_correct +=1
+            if(letter_correct == seq_len):
+                batch_word_correct +=1
 
         print("Loss {:3f}".format(train_loss/(b_index+1)))
         print("Batch {} letter acc: {:3f} ({}/{})".format(b_index,(batch_letter_correct/batch_letter_total), batch_letter_correct, batch_letter_total))
         print("Batch {} word acc: {:3f} ({}/{})".format(b_index,(batch_word_correct/batch), batch_word_correct, batch))
         print("-----")
+        train_letter_acc.append(batch_letter_correct/ batch_letter_total)
+        train_word_acc.append(batch_word_correct/batch)
     epoch_word_total += batch
     epoch_word_correct += batch_letter_total
     epoch_letter_total += batch_letter_total
@@ -232,12 +240,15 @@ def test(epoch):
             batch_letter_correct += letter_correct
             print("Seq {} letter acc: {:3f} ({}/{})".format(i,(letter_correct/seq_len),letter_correct, seq_len))
             if(letter_correct == seq_len):
-                bactch_word_correct +=1
+                batch_word_correct +=1
 
 
         print("Test Batch {} letter acc: {:3f} ({}/{})".format(b_index,(batch_letter_correct/batch_letter_total), batch_letter_correct, batch_letter_total))
         print("Test Batch {} word acc: {:3f} ({}/{})".format(b_index, (batch_word_correct/batch), batch_word_correct, batch))
         print("-----")
+        test_letter_acc.append(batch_letter_correct/ batch_letter_total)
+        test_word_acc.append(batch_word_correct/batch)
+
     epoch_word_total += batch
     epoch_word_correct += batch_word_correct
     epoch_letter_total += batch_letter_total
@@ -246,8 +257,8 @@ def test(epoch):
     print("Test Epoch {} word acc: {:3f} ({}/{})".format(epoch, (epoch_word_correct/epoch_word_total), epoch_word_correct, epoch_word_total))
 
 
-for epoch in range(0,10):
-    print("Epoch", epoch)
+for epoch in range(0,100):
+    print("Epoch", epoch+1)
     start = time.time()
     train(epoch)
     test(epoch)
