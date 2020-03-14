@@ -171,7 +171,7 @@ def train(epoch):
             
             batch_letter_total += seq_len
             batch_letter_correct += letter_correct
-            print("Seq letter acc: {:3f} ({}/{})".format((letter_correct/seq_len), letter_correct, seq_len))
+            #print("Seq letter acc: {:3f} ({}/{})".format((letter_correct/seq_len), letter_correct, seq_len))
             if(letter_correct == seq_len):
                 batch_word_correct +=1
 
@@ -238,7 +238,7 @@ def test(epoch):
 
             batch_letter_total += seq_len
             batch_letter_correct += letter_correct
-            print("Seq {} letter acc: {:3f} ({}/{})".format(i,(letter_correct/seq_len),letter_correct, seq_len))
+            #print("Seq {} letter acc: {:3f} ({}/{})".format(i,(letter_correct/seq_len),letter_correct, seq_len))
             if(letter_correct == seq_len):
                 batch_word_correct +=1
 
