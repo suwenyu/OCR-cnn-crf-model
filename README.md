@@ -16,5 +16,8 @@ $ pip3 install numpy
 ```
 
 ### How to run
-
+Move to the folder named "code"
+```bash
+cd /path/to/assign/code
+```
 
