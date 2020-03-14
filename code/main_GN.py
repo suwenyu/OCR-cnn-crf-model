@@ -67,6 +67,7 @@ test_loader = data_utils.DataLoader(test,  # dataset to load from
                                     )
 print('=> Building model..')
 
+#enable gpu
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 net = googlenet.GoogLeNet()
 net = net.to(device)
@@ -103,10 +104,12 @@ def get_seqlen(data):
     seq_len = len((max_val!=0).nonzero())
     return seq_len
 
-train_word_acc = []
-train_letter_acc = []
-test_word_acc =[]
-test_letter_acc =[]
+#plotting the result
+#train_word_acc = []
+#train_letter_acc = []
+#test_word_acc =[]
+#test_letter_acc =[]
+
 #Training
 def train(epoch):
     net.train()
@@ -138,9 +141,8 @@ def train(epoch):
             labels = modify_data(labels, seq_len)
             labels = labels.view(seq_len, 1, img_len)
             
-
-            #print("features, labels shape: ", features.shape, labels.shape)
             #loss = torch.tensor(0, dtype=torch.float)
+
             #train the model by its seq_len
             letter_correct = 0
             for i in range(seq_len): 
@@ -151,8 +153,7 @@ def train(epoch):
                  #   targets = torch.max(labels[i],1)[1].to(device)
                  #   loss = criterion(outputs, targets)
                  #   loss.backward()
-                #    return loss
-
+                 #   return loss
                 #optimizer.step(closure)
                 
                 optimizer.zero_grad()
@@ -179,8 +180,8 @@ def train(epoch):
         print("Batch {} letter acc: {:3f} ({}/{})".format(b_index,(batch_letter_correct/batch_letter_total), batch_letter_correct, batch_letter_total))
         print("Batch {} word acc: {:3f} ({}/{})".format(b_index,(batch_word_correct/batch), batch_word_correct, batch))
         print("-----")
-        train_letter_acc.append(batch_letter_correct/ batch_letter_total)
-        train_word_acc.append(batch_word_correct/batch)
+        #train_letter_acc.append(batch_letter_correct/ batch_letter_total)
+        #train_word_acc.append(batch_word_correct/batch)
     epoch_word_total += batch
     epoch_word_correct += batch_letter_total
     epoch_letter_total += batch_letter_total
@@ -212,19 +213,18 @@ def test(epoch):
         for i in range(batch):
             seq_len = get_seqlen(testY[i])
             #print(seq_len)
-
             #print("features, labels shape: ", testX[i].shape, testY[i].shape) #14*26
+
             #modify feature and label to fit the model
             features = modify_data(testX[i], seq_len)
             labels = testY[i].view(seq, img_len, 1)
             labels = modify_data(labels, seq_len)
             labels = labels.view(seq_len, 1, img_len)
             
-            print("features, labels shape: ", features.shape, labels.shape)
+            #print("features, labels shape: ", features.shape, labels.shape)
             
             letter_correct = 0
             for i in range(seq_len): 
-                #print(i)
                 optimizer.zero_grad()
                 outputs = net(features[i])
                 targets = torch.max(labels[i], 1)[1].to(device)
@@ -233,8 +233,7 @@ def test(epoch):
                 test_loss += loss.item()
                 _, predicted = outputs.max(1)
 
-                letter_correct+= predicted.eq(targets).sum().item()
-                #letter_correct += (predicted==targets).sum().item() #correct letter in a word
+                letter_correct+= predicted.eq(targets).sum().item() #correct letter in a word
 
             batch_letter_total += seq_len
             batch_letter_correct += letter_correct
@@ -256,7 +255,7 @@ def test(epoch):
     print("Test Epoch {} letter acc: {:3f} ({}/{})".format(epoch, (epoch_letter_correct/epoch_letter_total), epoch_letter_correct, epoch_letter_total))
     print("Test Epoch {} word acc: {:3f} ({}/{})".format(epoch, (epoch_word_correct/epoch_word_total), epoch_word_correct, epoch_word_total))
 
-
+#Run the model
 for epoch in range(0,100):
     print("Epoch", epoch+1)
     start = time.time()
