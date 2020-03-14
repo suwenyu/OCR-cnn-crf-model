@@ -121,7 +121,9 @@ def train(epoch):
         batch_word_correct = 0
 
         batch, seq, img_len = trainY.shape
-
+        #for i in range(count):
+        #for i in testY:
+            #seq_len = get_seqlen(trainY[i])
         for i in trainY:
             seq_len = get_seqlen(i)
 
@@ -136,6 +138,7 @@ def train(epoch):
             #train the model by its seq_len
             letter_correct = 0
             for i in range(seq_len): 
+                print(i)
                 optimizer.zero_grad()
                 outputs = net(features[i]) #256*26
                 targets = torch.max(labels[i], 1)[1]  #256
@@ -152,7 +155,7 @@ def train(epoch):
             
             batch_letter_total += batch*seq_len
             batch_letter_correct += letter_correct
-            print("Seq {} letter acc: {:3f} ({}/{})".format(i,(letter_correct/batch_letter_total), letter_correct, batch_letter_total))
+            print("Seq letter acc: {:3f} ({}/{})".format((letter_correct/(batch*seq_len)), letter_correct, batch*seq_len))
             if(letter_correct == batch_letter_total):
                 bactch_word_correct +=1
 
@@ -187,6 +190,11 @@ def test(epoch):
         batch_word_correct = 0
 
         batch, seq, img_len = testY.shape
+        #count = np.random.randint(batch)
+        #print(count)
+        #for i in range(count):
+        
+        #seq_len = get_seqlen(trainY[i])
 
         for i in testY:
             seq_len = get_seqlen(i)
@@ -200,6 +208,7 @@ def test(epoch):
             
             letter_correct = 0
             for i in range(seq_len): 
+                print(i)
                 optimizer.zero_grad()
                 outputs = net(features[i])
                 targets = torch.max(labels[i], 1)[1]
@@ -213,7 +222,7 @@ def test(epoch):
 
             batch_letter_total += batch*seq_len
             batch_letter_correct += letter_correct
-            print("Seq {} letter acc: {:3f} ({}/{})".format(i,(letter_correct/batch_letter_total),letter_correct, batch_letter_total))
+            print("Seq {} letter acc: {:3f} ({}/{})".format(i,(letter_correct/(batch*seq_len)),letter_correct, batch*seq_len))
             if(letter_correct == batch_letter_total):
                 bactch_word_correct +=1
 
