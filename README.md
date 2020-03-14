@@ -50,14 +50,21 @@ After the above is complete, save and run the following:
  ##### 4(c)
  This section runs the following model(s):
   1. CNN-CNN-CRF
- You will need to open the train.py file. Line 14, you will need to modify it to be the following:
+ You will need to open the train.py file. 
+ Line 14, you will need to modify it to be the following:
  ```
 batch_size = 64
 ```
-You will need to open the crf.py file. Line 32, you will need to modify it to be the following:
+You will need to open the crf.py file. 
+Line 32, you will need to modify it to be the following:
 ```
-self.cnn = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1) 
-self.cnn = conv.Conv(kernel_size=(3, 3), padding = False, stride = 1) 
+self.cnn1 = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1) 
+self.cnn2 = conv.Conv(kernel_size=(3, 3), padding = False, stride = 1) 
+```
+Line 162, you will need to modify it to be the following:
+```
+middle_features = self.cnn1.forward(X)
+return self.cnn2.forward(middle_features)
 ```
 After the above is complete, save and run the following:
 ```bash
