@@ -1,4 +1,4 @@
-# aml2020s_assign2
+# Optical Character Recognition Problem for Conditional Random Fields with Convolutions
 
 ### Description
 We will explore Conditional Random Fields (CRFs), but we will use additional image level features such as convolutions to aid the training. We use PyTorch to implement our CRF model and convolutions.
