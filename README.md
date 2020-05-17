@@ -57,8 +57,10 @@ For ADAM optimizer:
 optimizer = optim.Adam(net.parameters(), lr = 0.1, eps = 1e-08)
 ```
 
-##### Results
-
-
+### Results
+| Model     | Letter Accuracy | Word Accuracy |
+|-----------|-----------------|---------------|
+| CNN + CRF | **83.43%**      | **43.75%**    |
+| CRF       | 79.92%          | 35.94%        |
 
 
