@@ -30,7 +30,7 @@ class CRF(nn.Module):
         self.use_cuda = torch.cuda.is_available()
 
         self.cnn = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=5, padding = 2, stride = 1)
-
+        # self.cnn = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3)
 
         ### Use GPU if available
         if self.use_cuda:
@@ -103,7 +103,8 @@ class CRF(nn.Module):
         Implement the objective of CRF here.
         The input (features) to the CRF module should be convolution features.
         """
-        feat_x = X
+        feat_x = self.get_conv_features(X)
+        # feat_x = X
         if self.use_cuda:
             numpy_feat_x = feat_x.cpu().detach().numpy()
             numpy_weights = self.weights.cpu().detach().numpy()
@@ -123,20 +124,8 @@ class CRF(nn.Module):
     def loss(self, input_x, input_y):
         # seq_len = len(input_y.nonzero())-1
         # print(input_x.shape)
-        batch_size, seq_len, img = input_x.shape
-        new_input_x = input_x.view(seq_len, batch_size, 1, 8, 16)
         
-        tmp = torch.empty(seq_len, batch_size, 1, 8, 16)
-        if self.use_cuda:
-            tmp = tmp.cuda()
-
-        for index, seq in enumerate(new_input_x):
-            tmp[index] = self.cnn(seq)
-        
-        feat_x = tmp.view(batch_size, seq_len, 128)
-        # print(feat_x.shape)
-        # feat_x = tmp
-        # feat_x = self.get_conv_features(input_x)
+        feat_x = self.get_conv_features(input_x)
 
         # print(feat_x)
         # feat_x = input_x
@@ -166,5 +155,17 @@ class CRF(nn.Module):
         """
         Generate convolution features for a given word
         """
-        convfeatures = blah
+        batch_size, seq_len, img = X.shape
+        X = X.view(seq_len, batch_size, 1, 8, 16)
+
+        tmp = torch.empty(seq_len, batch_size, 1, 8, 16)
+        if self.use_cuda:
+            tmp = tmp.cuda()
+
+        for index, seq in enumerate(X):
+            tmp[index] = self.cnn(seq)
+
+        convfeatures = tmp.view(batch_size, seq_len, 128)
+        
+        
         return convfeatures
