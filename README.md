@@ -3,6 +3,7 @@
 ### Description
 We will explore Conditional Random Fields (CRFs), but we will use additional image level features such as convolutions to aid the training. We use PyTorch to implement our CRF model and convolutions.
 
+![img](./image/crf_example.png "img")
 
 ### Dataset
 The original dataset is downloaded from http://www.seas.upenn.edu/∼taskar/ocr. It contains the image and label of 6,877 words collected from 150 human subjects, with 52,152 letters in total. To simplify feature engineering, each letter image is encoded by a 128 (=16\*8) dimensional vector, whose entries are either 0 (black) or 1 (white).
