@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 
-import conv 
-
 import numpy as np
+# import conv
+
 import utils, max_sum_solution
 
 def logTrick(numbers):
@@ -29,11 +29,12 @@ class CRF(nn.Module):
         self.batch_size = batch_size
         self.use_cuda = torch.cuda.is_available()
 
-        self.cnn = conv.Conv(kernel_size=(5, 5), padding = False, stride = 1)
+        self.cnn = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=5, padding = 2, stride = 1)
+
+
         ### Use GPU if available
         if self.use_cuda:
             [m.cuda() for m in self.modules()]
-
 
         params = utils.load_model_params('../data/model.txt')
         W = utils.extract_w(params)
@@ -42,9 +43,6 @@ class CRF(nn.Module):
         self.weights = nn.Parameter(torch.tensor(W, dtype=torch.float))
         self.transition = nn.Parameter(torch.tensor(T, dtype=torch.float))
 
-        # self.W = torch.zeros([num_labels * input_dim])
-        # self.T = torch.zeros([num_labels * num_labels])
-        # self.init_params()
 
     def init_params(self):
         """
@@ -100,11 +98,12 @@ class CRF(nn.Module):
         # print(sum_num, self._compute_z(new_x, alpha))
         return sum_num
 
-
-    def forward(self, input_x):
-
-        feat_x = self.get_conv_features(input_x)
-
+    def forward(self, X):
+        """
+        Implement the objective of CRF here.
+        The input (features) to the CRF module should be convolution features.
+        """
+        feat_x = X
         if self.use_cuda:
             numpy_feat_x = feat_x.cpu().detach().numpy()
             numpy_weights = self.weights.cpu().detach().numpy()
@@ -113,7 +112,6 @@ class CRF(nn.Module):
             numpy_feat_x = feat_x.detach().numpy()
             numpy_weights = self.weights.detach().numpy()
             numpy_transition = self.transition.detach().numpy()
-
         
         result = []
         for x in numpy_feat_x:
@@ -122,12 +120,23 @@ class CRF(nn.Module):
         
         return torch.from_numpy(result)
 
-
     def loss(self, input_x, input_y):
         # seq_len = len(input_y.nonzero())-1
+        # print(input_x.shape)
+        batch_size, seq_len, img = input_x.shape
+        new_input_x = input_x.view(seq_len, batch_size, 1, 8, 16)
+        
+        tmp = torch.empty(seq_len, batch_size, 1, 8, 16)
+        if self.use_cuda:
+            tmp = tmp.cuda()
 
-        # feat_x = input_x
-        feat_x = self.get_conv_features(input_x)
+        for index, seq in enumerate(new_input_x):
+            tmp[index] = self.cnn(seq)
+        
+        feat_x = tmp.view(batch_size, seq_len, 128)
+        # print(feat_x.shape)
+        # feat_x = tmp
+        # feat_x = self.get_conv_features(input_x)
 
         # print(feat_x)
         # feat_x = input_x
@@ -145,12 +154,11 @@ class CRF(nn.Module):
 
         return (-1) * (total/self.batch_size)
 
-    # def backward(self):
+    def backward(self):
         """
         Return the gradient of the CRF layer
         :return:
         """
-
         # gradient = blah
         # return gradient
 
@@ -158,6 +166,5 @@ class CRF(nn.Module):
         """
         Generate convolution features for a given word
         """
-        # return self.cnn.forward_pkg(X)
-        return self.cnn.forward(X)
-        # return convfeatures
+        convfeatures = blah
+        return convfeatures

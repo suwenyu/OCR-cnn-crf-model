@@ -3,18 +3,18 @@ import torch.optim as optim
 import torch.utils.data as data_utils
 from data_loader import get_dataset
 import numpy as np
-import time
-
 from crf import CRF
+
+import time
 import train_crf
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Tunable parameters
-batch_size = 256
+batch_size = 64
 num_epochs = 10
 max_iters  = 1000
-print_iter = 5 # Prints results every n iterations
+print_iter = 25 # Prints results every n iterations
 conv_shapes = [[1,64,128]] #
 
 
@@ -28,15 +28,14 @@ cuda = torch.cuda.is_available()
 crf = CRF(input_dim, embed_dim, conv_shapes, num_labels, batch_size)
 
 crf = crf.to(device)
-
 # Setup the optimizer
-opt = optim.LBFGS(crf.parameters())
-# opt = optim.SGD(crf.parameters(), lr=0.01, momentum=0.9)
+# opt = optim.LBFGS(crf.parameters())
+opt = optim.Adam(crf.parameters(), lr=0.01)
 
 ##################################################
 # Begin training
 ##################################################
-step = 0
+step = 1
 
 # Fetch dataset
 dataset = get_dataset()
@@ -83,22 +82,10 @@ for i in range(num_epochs):
             train_Y = train_Y.cuda()
 
         # compute loss, grads, updates:
-        # opt.zero_grad() # clear the gradients
-        # tr_loss = crf.loss(train_X, train_Y) # Obtain the loss for the optimizer to minimize
-        # tr_loss.backward() # Run backward pass and accumulate gradients
-        # opt.step() # Perform optimization step (weight updates)
-
-        tr_loss = torch.tensor(0, dtype=torch.float)
-
-        def closure():
-            global tr_loss
-            opt.zero_grad()
-            tr_loss = crf.loss(train_X, train_Y)
-            # print('loss:', tr_loss.data)
-            tr_loss.backward()
-            return tr_loss
-
-        opt.step(closure)
+        opt.zero_grad() # clear the gradients
+        tr_loss = crf.loss(train_X, train_Y) # Obtain the loss for the optimizer to minimize
+        tr_loss.backward() # Run backward pass and accumulate gradients
+        opt.step() # Perform optimization step (weight updates)
 
         # print to stdout occasionally:
         if step % print_iter == 0:
@@ -119,18 +106,41 @@ for i in range(num_epochs):
             if cuda:
                 pred = pred.cpu()
 
+
+            random_ixs = np.random.choice(train_data.shape[0], batch_size, replace=False)
+            train_X = train_data[random_ixs, :]
+            train_Y = train_target[random_ixs, :]
+
+            train_X = torch.from_numpy(train_X).float()
+            train_Y = torch.from_numpy(train_Y).long()
+
+            if cuda:
+                train_X = train_X.cuda()
+                train_Y = train_Y.cuda()
+            tr_loss = crf.loss(train_X, train_Y)
+            
+            tr_pred = crf.forward(train_X)
+            if cuda:
+                tr_pred = tr_pred.cpu()
+
             print(step, tr_loss.data, test_loss.data,
                        tr_loss.data / batch_size, test_loss.data / batch_size)
 
             ##################################################################
             # IMPLEMENT WORD-WISE AND LETTER-WISE ACCURACY HERE
             ##################################################################
+            print("============================")
+            word_acc, letter_acc = train_crf.word_letter_accuracy(tr_pred, train_Y)
+            print("Train Letter Accuracy: %f, Word Accuracy: %f" % (letter_acc, word_acc) )
+
             word_acc, letter_acc = train_crf.word_letter_accuracy(pred, test_Y)
-            print("Letter Accuracy: %f, Word Accuracy: %f" % (letter_acc, word_acc) )
-            print(step, test_loss.data, test_loss.data / batch_size)
+            print("Test Letter Accuracy: %f, Word Accuracy: %f" % (letter_acc, word_acc) )
             # print(blah)
 
-        print("time: %.2f seconds." % (time.time() - start_time))
+            print("time: %.2f seconds." % (time.time() - start_time))
+            # print(blah)
+            print("============================")
+
         step += 1
         if step > max_iters: raise StopIteration
 del train, test

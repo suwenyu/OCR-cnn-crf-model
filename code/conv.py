@@ -29,21 +29,22 @@ class Conv(nn.Module):
         self.use_cuda = torch.cuda.is_available()
 
         #run init param to get the kernel, which will be updated with autograd
-        # self.kernel = self.init_params()
-        self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]], dtype=torch.float) #to test the 5x5 check
-        if self.use_cuda:
-            self.kernel = self.kernel.cuda()
+        self.kernel = self.init_params()
+        # self.kernel = torch.tensor([[1,0,1], [0,1,0], [1,0,1]], dtype=torch.float) #to test the 5x5 check
+        # if self.use_cuda:
+        #     self.kernel = self.kernel.cuda()
 
         self.pad_size = 0
         if self.padding:
-            self.pad_size = int((self.width - self.kernel_size + 1)/2)
+            self.pad_size = int((self.width - (self.width - self.kernel_size + 1))/2)
 
         self.conv_pkg = nn.Conv2d(1, 1, kernel_size = self.kernel_size, stride = self.stride, padding = self.pad_size)
+        self.conv_pkg_1 = nn.Conv2d(1, 1, kernel_size = 5, stride = 1, padding = 0)
 
         if self.use_cuda:
             [m.cuda() for m in self.modules()]
 
-        # self.kernel = Parameter(self.kernel)
+        
 
     def init_params(self):
         """
@@ -78,6 +79,7 @@ class Conv(nn.Module):
                 new_width = math.ceil((self.width - self.kernel.shape[0])/self.stride +1)
                 new_length = math.ceil((self.length - self.kernel.shape[0])/self.stride +1)
                 pad = 0
+
 
             # return_from_forward = torch.empty(size=(batch_size,seq_len, new_width * new_length))
             return_from_forward = torch.empty(size = (batch_size, seq_len, self.width * self.length))
